@@ -21,7 +21,6 @@
 <body class="bg-darkBg text-gray-200 h-full font-sans flex flex-col antialiased">
 
     <script>
-        // URL WEB APP GAS YANG MULIA SUDAH TERTANAM PERMANEN DI SINI:
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxMz_IC3RuM9jxrAsdJ4f8a-qtZ1DZB0zzp-VLh1XkNzaZEkRVHLqS96gU1PguT7m3L/exec';
     </script>
 
@@ -161,7 +160,7 @@
         </main>
     </div>
 
-    <!-- MODAL INPUT TUGAS (CASCADING FILTER DIVISI ➔ DEPARTEMEN ➔ PIC) -->
+    <!-- MODAL INPUT TUGAS -->
     <div id="modal-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -283,7 +282,6 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGIKA UTAMA -->
     <script>
         let currentUser = null;
         let masterUsers = [];
@@ -298,9 +296,8 @@
             const btn = document.getElementById('btn-login');
 
             errBox.classList.add('hidden');
-
             btn.disabled = true;
-            btn.innerText = 'MEMVERIFIKASI...'; // TEKS SINGKAT SESUAI INSTRUKSI
+            btn.innerText = 'MEMVERIFIKASI...';
 
             try {
                 const response = await fetch(GAS_URL, {
@@ -317,7 +314,8 @@
                     document.getElementById('login-view').classList.add('hidden');
                     document.getElementById('dashboard-view').classList.remove('hidden');
                     
-                    document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Dept: ${currentUser.dept} | Divisi: ${currentUser.divisi}`;
+                    const userDivsStr = (currentUser.divisiList || [currentUser.dept]).join(', ');
+                    document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Dept: ${currentUser.dept} | Divisi: ${userDivsStr}`;
 
                     setupMasterDataUI();
                     lucide.createIcons();
@@ -337,34 +335,43 @@
         }
 
         function setupMasterDataUI() {
-            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
+            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
 
-            const divisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
+            const allDivisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
+            
+            // FILTER HEADER DIVISI
             const headerDivisiSelect = document.getElementById('filter-divisi-header');
             headerDivisiSelect.innerHTML = '';
 
             if (isSuperAdminOrDireksi) {
                 headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
-                divisiList.forEach(d => {
+                allDivisiList.forEach(d => {
                     headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
                 });
                 headerDivisiSelect.disabled = false;
             } else {
-                headerDivisiSelect.innerHTML = `<option value="${currentUser.divisi}" class="bg-cardBg">${currentUser.divisi}</option>`;
-                headerDivisiSelect.disabled = true;
+                const userDivs = currentUser.divisiList || [currentUser.dept];
+                userDivs.forEach(d => {
+                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
+                });
+                headerDivisiSelect.disabled = userDivs.length <= 1;
             }
 
+            // FORM TARGET DIVISI INPUT TASK (MENDUKUNG MULTI-DIVISI SPT AHW: LABORATORIUM & KLINIK)
             const taskDivisiSelect = document.getElementById('task-divisi-target');
             taskDivisiSelect.innerHTML = '';
 
             if (isSuperAdminOrDireksi) {
-                divisiList.forEach(d => {
+                allDivisiList.forEach(d => {
                     taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
                 });
                 taskDivisiSelect.disabled = false;
             } else {
-                taskDivisiSelect.innerHTML = `<option value="${currentUser.divisi}">${currentUser.divisi}</option>`;
-                taskDivisiSelect.disabled = true;
+                const userDivs = currentUser.divisiList || [currentUser.dept];
+                userDivs.forEach(d => {
+                    taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                });
+                taskDivisiSelect.disabled = false; // Boleh milih di antara divisi bawahannya
             }
 
             updateDeptOptions();
@@ -400,29 +407,21 @@
 
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
 
-            const levelRank = {
-                'Direksi': 5,
-                'Manajer': 4,
-                'Manager': 4,
-                'Pengawas': 3,
-                'Supervisor': 3,
-                'Staff': 2,
-                'Staf': 2,
-                'Non Struktural': 1
-            };
-
-            const currentUserRank = levelRank[currentUser.level] || 2;
-
+            // PENCOCOKAN PEMETIKAN BAWAHAN BERDASARKAN ATASANLEVEL DI MASTER HIREARKI JABATAN
             const filteredPegawai = masterUsers.filter(u => {
-                if (String(u.nik) === String(currentUser.nik)) return false;
+                if (String(u.nik) === String(currentUser.nik)) return false; // Jangan tampilkan diri sendiri
 
+                // Cocokkan Departemen
                 const matchDept = String(u.dept).trim() === String(selectedDept).trim();
                 if (!matchDept) return false;
 
                 if (isSuperAdminOrDireksi) return true;
 
-                const targetUserRank = levelRank[u.level] || 1;
-                return targetUserRank <= currentUserRank;
+                // VALIDASI UTAMA: Pegawai harus menyebut Jabatan/Level user login sebagai AtasanLevel-nya
+                // Atau bawahan sejajar yang tidak berada di atas jabatannya
+                const isUnderUser = (u.atasanLevel === currentUser.jabatan) || (u.atasanLevel === currentUser.level) || (currentUser.level === 'Manajer' || currentUser.level === 'Manager');
+
+                return isUnderUser;
             });
 
             if (filteredPegawai.length === 0) {
@@ -574,7 +573,8 @@
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
 
             if (!isSuperAdminOrDireksi) {
-                viewable = viewable.filter(t => (t.deptTarget || t.Dept || t.dept) === currentUser.dept || t.divisi === currentUser.divisi);
+                const userDivs = currentUser.divisiList || [currentUser.dept];
+                viewable = viewable.filter(t => userDivs.includes(t.deptTarget) || userDivs.includes(t.dept) || userDivs.includes(t.divisi));
             }
 
             document.getElementById('stat-total').innerText = viewable.length;
