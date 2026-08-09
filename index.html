@@ -205,14 +205,25 @@
                             <option value="Rutin">Rutinan (Looping)</option>
                         </select>
                     </div>
+
+                    <!-- DROPDOWN FREKUENSI RUTIN LENGKAP & FUNGSIONAL -->
                     <div id="field-frekuensi" class="hidden">
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
-                        <select id="task-frekuensi" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
+                        <select id="task-frekuensi" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
                             <option value="Harian">Harian</option>
                             <option value="2 Harian">2 Harian</option>
                             <option value="3 Harian">3 Harian</option>
+                            <option value="4 Harian">4 Harian</option>
+                            <option value="5 Harian">5 Harian</option>
+                            <option value="6 Harian">6 Harian</option>
                             <option value="Mingguan">Mingguan</option>
+                            <option value="2 Mingguan">2 Mingguan</option>
+                            <option value="3 Mingguan">3 Mingguan</option>
                             <option value="Bulanan">Bulanan</option>
+                            <option value="2 Bulanan">2 Bulanan (Dwi Bulanan)</option>
+                            <option value="3 Bulanan">3 Bulanan (Triwulan)</option>
+                            <option value="4 Bulanan">4 Bulanan (Caturwulan)</option>
+                            <option value="6 Bulanan">6 Bulanan (Semesteran)</option>
                             <option value="Tahunan">Tahunan</option>
                         </select>
                     </div>
@@ -400,14 +411,12 @@
             updatePICOptions();
         }
 
-        // AKURASI SANGAT KETAT: MENCEGAH PEGAWAI DEPT LAIN BOCOR KELUAR!
         function updatePICOptions() {
             const selectedDivisi = document.getElementById('task-divisi-target').value;
             const selectedDept = document.getElementById('task-dept-target').value;
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
 
-            // Cari pimpinan/manajer spesifik yang membawahi departemen/divisi ini
             const deptManagerRows = masterHirearki.filter(h => 
                 String(h.Departemen || h.departemen || '').trim() === String(selectedDept).trim() ||
                 String(h.Divisi || h.divisi || '').trim() === String(selectedDivisi).trim()
@@ -416,20 +425,15 @@
             const deptManagerJabatans = [...new Set(deptManagerRows.map(h => String(h.Jabatan || h.jabatan || '').trim()))];
 
             const filteredPegawai = masterUsers.filter(u => {
-                if (String(u.nik) === String(currentUser.nik)) return false; // Jangan tampilkan diri sendiri
+                if (String(u.nik) === String(currentUser.nik)) return false;
 
-                // Mencegah Direktur MFT menugaskan Direktur Utama DPS
                 if (currentUser.jabatan === 'Direktur' && u.jabatan === 'Direktur Utama') return false;
 
-                // ATURAN SANGAT KETAT 1: Staf HARUS 100% PERSIS KELUAR DI DEPARTEMENNYA SENDIRI!
                 const isExactDeptMember = String(u.dept).trim() === String(selectedDept).trim();
-
-                // ATURAN SANGAT KETAT 2: Manajer Boleh Muncul Jika Dia Membawahi Dept/Divisi Tersebut
                 const isDeptManager = deptManagerJabatans.includes(u.jabatan) && (u.level === 'Manajer' || u.level === 'Manager');
 
                 if (!isExactDeptMember && !isDeptManager) return false;
 
-                // Restriksi Atasan
                 if (currentUser.jabatan === 'Direktur Utama') return true;
                 if (currentUser.level === 'Direksi' && u.level !== 'Direksi') return true;
 
@@ -536,15 +540,18 @@
             updateDeptOptions();
         }
 
+        // TANGKAP DAN SIMPAN NILAI FREKUENSI SECARA UTH KE GSHEET
         async function handleSaveTask(e) {
             e.preventDefault();
             const selectedPic = document.getElementById('task-pic-target').value;
+            const jenisTugasVal = document.getElementById('task-jenis').value;
+            const frekuensiVal = jenisTugasVal === 'Rutin' ? document.getElementById('task-frekuensi').value : '-';
             
             const newTask = {
                 id: 'TSK-' + Date.now().toString().slice(-5),
-                jenisTugas: document.getElementById('task-jenis').value,
+                jenisTugas: jenisTugasVal,
                 judul: document.getElementById('task-title').value,
-                frekuensi: document.getElementById('task-frekuensi').value,
+                frekuensi: frekuensiVal,
                 deptTarget: document.getElementById('task-dept-target').value,
                 tanggalMulai: document.getElementById('task-start').value,
                 tanggalTarget: document.getElementById('task-end').value,
@@ -599,7 +606,7 @@
 
             tbody.innerHTML = viewable.map(t => `
                 <tr class="hover:bg-cardBg/50 transition">
-                    <td class="py-3 px-4 font-mono font-bold text-white">${t.TaskID || t.id}<br><span class="text-[10px] text-brandPurple">${t.JenisTugas || t.jenisTugas}</span></td>
+                    <td class="py-3 px-4 font-mono font-bold text-white">${t.TaskID || t.id}<br><span class="text-[10px] text-brandPurple">${t.JenisTugas || t.jenisTugas} ${t.Frekuensi ? '(' + t.Frekuensi + ')' : ''}</span></td>
                     <td class="py-3 px-4 font-semibold text-white">${t.Judul || t.judul}</td>
                     <td class="py-3 px-4"><span class="text-gray-400">${t.PIC_Nama || t.picNama}</span> ➔ <span class="text-indigo-300 font-bold">${t.picNama || t.PIC_NIK || '-'}</span></td>
                     <td class="py-3 px-4"><span class="px-2 py-0.5 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-indigo-300">${t.deptTarget || t.Dept || t.dept}</span></td>
