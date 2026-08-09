@@ -12,6 +12,11 @@
             theme: { extend: { colors: { darkBg: '#0b0d12', panelBg: '#13161f', cardBg: '#1c202c', borderDark: '#2a2f40', brandPurple: '#6366f1' } } }
         }
     </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0d12; }
+        ::-webkit-scrollbar-thumb { background: #2a2f40; border-radius: 4px; }
+    </style>
 </head>
 <body class="bg-darkBg text-gray-200 h-full font-sans flex flex-col antialiased">
 
@@ -20,27 +25,31 @@
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxMz_IC3RuM9jxrAsdJ4f8a-qtZ1DZB0zzp-VLh1XkNzaZEkRVHLqS96gU1PguT7m3L/exec';
     </script>
 
-    <!-- PORTAL LOGIN -->
+    <!-- PORTAL LOGIN (UI ELEGAN SESUAI DENGAN REVISI PERUBAHAN LOGO DARI YANG MULIA) -->
     <div id="login-view" class="flex-1 flex flex-col md:flex-row h-screen">
         <div class="md:w-1/2 bg-gradient-to-br from-indigo-950 via-slate-950 to-black p-10 flex flex-col justify-between border-r border-borderDark relative overflow-hidden">
-            <div class="absolute -right-20 -top-20 w-80 h-80 bg-brandPurple/10 rounded-full blur-3xl"></div>
-            <div class="relative z-10 space-y-6 my-auto">
-                <div class="flex items-center gap-3">
-                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-3.5 rounded-2xl shadow-xl text-white">
-                        <i data-lucide="activity" class="w-8 h-8"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-extrabold tracking-wider text-white">PT. PERSADA MEDIKA UTAMA</h1>
-                        <p class="text-xs text-indigo-400 font-bold tracking-widest uppercase">Granostic Command System</p>
-                    </div>
+            <div class="relative z-10 space-y-5 my-auto max-w-md">
+                
+                <!-- LOGO RESMI UTAMA -->
+                <div class="mb-4">
+                    <img src="https://lh3.googleusercontent.com/d/1Bo0fEb-lIgrCfHMjO8G6a4rd0L9rn5CC" alt="Granostic Logo" class="h-14 w-auto object-contain">
                 </div>
+
+                <!-- NAMA PERUSAHAAN RATA KIRI SEJAJAR BOX VISI -->
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-extrabold tracking-wider text-white">PT. PERSADA MEDIKA UTAMA</h1>
+                    <p class="text-xs text-indigo-400 font-bold tracking-widest uppercase">GRANOSTIC COMMAND SYSTEM</p>
+                </div>
+
+                <!-- BOX VISI STRATEGIS KORPORASI -->
                 <div class="bg-panelBg/80 backdrop-blur border border-borderDark p-5 rounded-2xl shadow-2xl">
-                    <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                    <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2 mb-2">
                         <i data-lucide="target" class="w-4 h-4"></i> Visi Strategis Korporasi
                     </h3>
-                    <p class="text-xs text-gray-300 mt-2 leading-relaxed">Menjadi fasilitas layanan kesehatan terpilih dan terpercaya.</p>
+                    <p class="text-xs text-gray-300 leading-relaxed">Menjadi fasilitas layanan kesehatan terpilih dan terpercaya.</p>
                 </div>
             </div>
+            
             <div class="relative z-10 text-[11px] text-gray-500 font-mono">
                 &copy; 2026 PT Persada Medika Utama • Real-time GSheet Sync
             </div>
@@ -77,19 +86,20 @@
 
     <!-- MAIN DASHBOARD SYSTEM -->
     <div id="dashboard-view" class="hidden flex-1 flex flex-col h-screen overflow-hidden">
+        <!-- TOP HEADER -->
         <header class="bg-panelBg border-b border-borderDark px-6 py-3 flex justify-between items-center z-30 shrink-0">
             <div class="flex items-center gap-3">
-                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl text-white">
-                    <i data-lucide="shield-check" class="w-5 h-5"></i>
-                </div>
+                <!-- LOGO ICON HEADER BARU -->
+                <img src="https://lh3.googleusercontent.com/d/13fYVo8GG4_R75m5fcqNieWpTnePyB0cb" alt="Granostic Icon" class="h-8 w-auto object-contain">
                 <div>
                     <h1 class="text-sm font-extrabold text-white">PT. PERSADA MEDIKA UTAMA</h1>
-                    <p class="text-[11px] text-indigo-400 font-mono" id="header-user-status">Status User</p>
+                    <!-- PENAMPILAN DATA AKUN LENGKAP (JABATAN, DEPT, DIVISI) -->
+                    <p class="text-[11px] text-indigo-400 font-mono" id="header-user-status">User: - | NIK: - | Jabatan: - | Dept: - | Divisi: -</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- DROPDOWN FILTER PER DEPARTEMEN DARI GSHEET -->
+                <!-- DROPDOWN FILTER PER DEPARTEMEN -->
                 <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
                     <i data-lucide="filter" class="w-3.5 h-3.5 text-brandPurple"></i>
                     <span class="text-[10px] font-bold text-gray-400 uppercase">Filter Dept:</span>
@@ -102,12 +112,18 @@
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Input Tugas
                 </button>
 
+                <!-- TOMBOL SETTING / UBAH PASSWORD (IKON GERIGI) -->
+                <button onclick="openChangePassModal()" class="bg-cardBg hover:bg-indigo-950/40 text-indigo-300 p-2 rounded-xl border border-borderDark transition" title="Pengaturan Sandi / Account">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+
                 <button onclick="logout()" class="bg-cardBg hover:bg-rose-950/40 text-rose-400 p-2 rounded-xl border border-borderDark transition" title="Keluar">
                     <i data-lucide="power" class="w-4 h-4"></i>
                 </button>
             </div>
         </header>
 
+        <!-- MAIN CONTENT -->
         <main class="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-panelBg border border-borderDark p-4 rounded-2xl">
@@ -145,7 +161,7 @@
                                 <th class="py-3 px-4">ID & Jenis</th>
                                 <th class="py-3 px-4">Judul Pekerjaan</th>
                                 <th class="py-3 px-4">Pemberi ➔ PIC Target</th>
-                                <th class="py-3 px-4">Dept Tujuan</th>
+                                <th class="py-3 px-4">Divisi / Dept Tujuan</th>
                                 <th class="py-3 px-4">Target Deadline</th>
                                 <th class="py-3 px-4">Status Approval</th>
                                 <th class="py-3 px-4 text-right">Aksi</th>
@@ -160,7 +176,7 @@
         </main>
     </div>
 
-    <!-- MODAL INPUT TUGAS (DINAMIS DARI MASTERDATABASE GSHEET) -->
+    <!-- MODAL 1: INPUT TUGAS (VALIDASI DATA DARI MASTER HIERARKI JABATAN) -->
     <div id="modal-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -176,18 +192,18 @@
                     <input type="text" id="task-title" required placeholder="Contoh: Renovasi Gedung / Laporan Bulanan" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
                 </div>
 
-                <!-- DROPDOWN DINAMIS DEPT & PIC DARI MASTER DATABASE -->
+                <!-- DROPDOWN DIVISI & DEPARTEMEN DARI MASTER HIREARKI JABATAN -->
                 <div class="grid grid-cols-2 gap-2 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <div>
-                        <label class="block font-semibold text-indigo-400 mb-1">Tugaskan Ke Dept:</label>
+                        <label class="block font-semibold text-indigo-400 mb-1">Tugaskan Ke Div / Dept:</label>
                         <select id="task-dept-target" onchange="updatePICOptions()" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
-                            <!-- Dynamic Options -->
+                            <!-- Dynamic Options From Master Hirearki Jabatan -->
                         </select>
                     </div>
                     <div>
                         <label class="block font-semibold text-indigo-400 mb-1">PIC Penerima (Nama - NIK):</label>
                         <select id="task-pic-target" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
-                            <!-- Dynamic Options -->
+                            <!-- Dynamic Options Hierarki Validated -->
                         </select>
                     </div>
                 </div>
@@ -248,9 +264,41 @@
         </div>
     </div>
 
+    <!-- MODAL 2: UBAH PASSWORD (SETTING IKON GERIGI) -->
+    <div id="modal-changepass" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-borderDark">
+                <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                    <i data-lucide="settings" class="w-4 h-4 text-brandPurple"></i> Pengaturan Sandi / Password
+                </h3>
+                <button onclick="document.getElementById('modal-changepass').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            <form onsubmit="handleChangePassword(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Password Baru</label>
+                    <input type="password" id="pass-new" required placeholder="Masukkan password baru" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Konfirmasi Password Baru</label>
+                    <input type="password" id="pass-confirm" required placeholder="Ketik ulang password baru" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                </div>
+
+                <div id="pass-error" class="hidden text-rose-400 text-[11px] font-bold">Password konfirmasi tidak cocok!</div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-borderDark">
+                    <button type="button" onclick="document.getElementById('modal-changepass').classList.add('hidden')" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
+                    <button type="submit" id="btn-pass-submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow">Perbarui Sandi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIKA UTAMA -->
     <script>
         let currentUser = null;
         let masterUsers = [];
+        let masterHirearki = [];
         let tasksData = [];
 
         async function handleLogin(e) {
@@ -281,14 +329,15 @@
                 if (res.status === 'success') {
                     currentUser = res.user;
                     masterUsers = res.masterUsers || [];
+                    masterHirearki = res.masterHirearki || [];
 
                     document.getElementById('login-view').classList.add('hidden');
                     document.getElementById('dashboard-view').classList.remove('hidden');
-                    document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Dept: ${currentUser.dept} | Role: ${currentUser.role}`;
+                    
+                    // PENAMPILAN DATA AKUN SANGAT LENGKAP (JABATAN, DEPT, DIVISI)
+                    document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Dept: ${currentUser.dept} | Divisi: ${currentUser.divisi}`;
 
-                    // Populate Master Departemen & Restriksi Pembatasan Tugas
                     setupMasterDataUI();
-
                     lucide.createIcons();
                     fetchDataFromGAS();
                 } else {
@@ -306,54 +355,129 @@
         }
 
         function setupMasterDataUI() {
-            // 1. Ekstrak seluruh daftar Departemen unik dari GSheet MasterDatabase
-            const depts = [...new Set(masterUsers.map(u => u.dept).filter(Boolean))];
+            // POPULATE DROPDOWN DARI SHEET MASTER HIREARKI JABATAN (NILAI UNIK DEPARTEMEN)
+            const deptsFromHirearki = [...new Set(masterHirearki.map(h => h.Departemen || h.departemen).filter(Boolean))];
 
-            // 2. Populate Header Filter
+            // Header Filter
             const headerSelect = document.getElementById('filter-dept-header');
             headerSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Departemen</option>`;
-            depts.forEach(d => {
+            deptsFromHirearki.forEach(d => {
                 headerSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
             });
 
-            // 3. Populate Form Dept Target Sesuai RESTRIKSI HAK AKSES
+            // Form Target Dept Input Task Sesuai Hierarki
             const taskDeptSelect = document.getElementById('task-dept-target');
             taskDeptSelect.innerHTML = '';
 
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
 
             if (isSuperAdminOrDireksi) {
-                // Direksi / Super Admin bebas memilih semua dept
-                depts.forEach(d => {
+                deptsFromHirearki.forEach(d => {
                     taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
                 });
                 taskDeptSelect.disabled = false;
             } else {
-                // MANAGER / SPV KETERBATASAN HANYA DEPT-NYA SENDIRI!
                 taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
-                taskDeptSelect.disabled = true; // Lock dropdown!
+                taskDeptSelect.disabled = true; // Lock dropdown untuk Manager/SPV/Staf biasa
             }
 
             updatePICOptions();
         }
 
+        // HIERARKI PENUGASAN BERJENJANG (MENCEGAH BAWAHAN MENUGASKAN ATASAN)
         function updatePICOptions() {
             const selectedDept = document.getElementById('task-dept-target').value;
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
 
-            // Filter pegawai berdasarkan departemen terpilih
-            const filteredPegawai = masterUsers.filter(u => u.dept === selectedDept);
+            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
+
+            // Pemetaan urutan hierarki level jabatan
+            const levelRank = {
+                'Direksi': 4,
+                'Manajer': 3,
+                'Manager': 3,
+                'Pengawas': 2,
+                'Supervisor': 2,
+                'Staff': 1,
+                'Staf': 1,
+                'Non Struktural': 1
+            };
+
+            const userRank = levelRank[currentUser.level] || 1;
+
+            // Filter pegawai berdasarkan departemen terpilih & HIERARKI
+            const filteredPegawai = masterUsers.filter(u => {
+                const matchDept = u.dept === selectedDept;
+                if (!matchDept) return false;
+
+                if (isSuperAdminOrDireksi) return true; // Direksi bisa menugaskan siapapun
+
+                // MENCEGAH MENUGASKAN ATASAN:
+                // Pegawai penerima HARUS memiliki level <= level pengguna yang sedang login!
+                const targetRank = levelRank[u.level] || 1;
+                return targetRank <= userRank && String(u.nik) !== String(currentUser.nik);
+            });
 
             if (filteredPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada pegawai di dept ini</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada bawahan valid di dept ini</option>`;
                 return;
             }
 
-            // POPULATE FORMAT MODEL: NAMA - NIK
             filteredPegawai.forEach(p => {
-                picSelect.innerHTML += `<option value="${p.nama} - ${p.nik}">${p.nama} - ${p.nik}</option>`;
+                picSelect.innerHTML += `<option value="${p.nama} - ${p.nik}">${p.nama} - ${p.nik} (${p.jabatan})</option>`;
             });
+        }
+
+        function openChangePassModal() {
+            document.getElementById('modal-changepass').classList.remove('hidden');
+            document.getElementById('pass-new').value = '';
+            document.getElementById('pass-confirm').value = '';
+            document.getElementById('pass-error').classList.add('hidden');
+        }
+
+        async function handleChangePassword(e) {
+            e.preventDefault();
+            const p1 = document.getElementById('pass-new').value.trim();
+            const p2 = document.getElementById('pass-confirm').value.trim();
+            const err = document.getElementById('pass-error');
+            const btn = document.getElementById('btn-pass-submit');
+
+            if (p1 !== p2) {
+                err.classList.remove('hidden');
+                return;
+            }
+
+            err.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerText = 'MEMPERBARUI...';
+
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'changePassword',
+                        nik: currentUser.nik,
+                        nama: currentUser.nama,
+                        dept: currentUser.dept,
+                        newPassword: p1
+                    })
+                });
+                const res = await response.json();
+
+                if (res.status === 'success') {
+                    alert('Sandi berhasil diperbarui di Google Sheets!');
+                    document.getElementById('modal-changepass').classList.add('hidden');
+                } else {
+                    alert('Gagal mengubah sandi: ' + res.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Terjadi kesalahan koneksi!');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'PERBARUI SANDI';
+            }
         }
 
         function logout() {
@@ -412,7 +536,7 @@
                 catatanBebas: document.getElementById('task-catatan').value,
                 status: 'Menunggu Verif',
                 progress: 0,
-                picNik: selectedPic.split(' - ')[1] || selectedPic,
+                picNik: selectedPic.split(' - ')[1] ? selectedPic.split(' - ')[1].split(' ')[0] : selectedPic,
                 picNama: selectedPic.split(' - ')[0] || selectedPic,
                 dept: currentUser.dept
             };
@@ -441,11 +565,9 @@
                 viewable = tasksData.filter(t => (t.deptTarget || t.Dept || t.dept) === filterDept);
             }
 
-            // RESTRIKSI HAK AKSES VIEW TABLE
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
 
             if (!isSuperAdminOrDireksi) {
-                // User biasa (Manager / SPV / Staf) HANYA BISA LIHAT TUGAS DI DEPARTEMENNYA SENDIRI
                 viewable = viewable.filter(t => (t.deptTarget || t.Dept || t.dept) === currentUser.dept);
             }
 
@@ -461,7 +583,7 @@
                 <tr class="hover:bg-cardBg/50 transition">
                     <td class="py-3 px-4 font-mono font-bold text-white">${t.TaskID || t.id}<br><span class="text-[10px] text-brandPurple">${t.JenisTugas || t.jenisTugas}</span></td>
                     <td class="py-3 px-4 font-semibold text-white">${t.Judul || t.judul}</td>
-                    <td class="py-3 px-4"><span class="text-gray-400">${t.PIC_Nama || t.picNama}</span> ➔ <span class="text-indigo-300 font-bold">${t.picNama || t.PIC_NIK || '-'} (${t.picNik || '-'})</span></td>
+                    <td class="py-3 px-4"><span class="text-gray-400">${t.PIC_Nama || t.picNama}</span> ➔ <span class="text-indigo-300 font-bold">${t.picNama || t.PIC_NIK || '-'}</span></td>
                     <td class="py-3 px-4"><span class="px-2 py-0.5 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-indigo-300">${t.deptTarget || t.Dept || t.dept}</span></td>
                     <td class="py-3 px-4 font-mono text-amber-400">${t.TanggalTarget || t.tanggalTarget}</td>
                     <td class="py-3 px-4"><span class="px-2.5 py-1 bg-cardBg border border-borderDark rounded-full text-[10px] font-bold text-indigo-300">${t.Status || t.status}</span></td>
