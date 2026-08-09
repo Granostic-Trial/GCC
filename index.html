@@ -21,7 +21,6 @@
 <body class="bg-darkBg text-gray-200 h-full font-sans flex flex-col antialiased">
 
     <script>
-        // URL WEB APP GAS PERMANEN MILIK YANG MULIA
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxMz_IC3RuM9jxrAsdJ4f8a-qtZ1DZB0zzp-VLh1XkNzaZEkRVHLqS96gU1PguT7m3L/exec';
     </script>
 
@@ -89,10 +88,28 @@
             </div>
 
             <div class="flex items-center gap-3">
+                <!-- NOTIFIKASI LONCENG BERWARNA -->
+                <div class="relative cursor-pointer bg-cardBg border border-borderDark p-2 rounded-xl text-amber-400 hover:text-amber-300 transition" title="Notifikasi Tugas">
+                    <i data-lucide="bell" class="w-4 h-4"></i>
+                    <span id="notif-badge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">0</span>
+                </div>
+
+                <!-- FILTER DIVISI HEADER -->
                 <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
                     <i data-lucide="filter" class="w-3.5 h-3.5 text-brandPurple"></i>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">Filter Divisi:</span>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">Divisi:</span>
                     <select id="filter-divisi-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
+                    </select>
+                </div>
+
+                <!-- FILTER JENIS TUGAS HEADER (PROJECT / RUTIN) -->
+                <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
+                    <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">Jenis:</span>
+                    <select id="filter-jenis-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
+                        <option value="ALL" class="bg-cardBg">Semua Jenis</option>
+                        <option value="Project" class="bg-cardBg">Project</option>
+                        <option value="Rutin" class="bg-cardBg">Rutinan</option>
                     </select>
                 </div>
 
@@ -100,7 +117,7 @@
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Input Tugas
                 </button>
 
-                <button onclick="openChangePassModal()" class="bg-cardBg hover:bg-indigo-950/40 text-indigo-300 p-2 rounded-xl border border-borderDark transition" title="Pengaturan Sandi / Account">
+                <button onclick="openChangePassModal()" class="bg-cardBg hover:bg-indigo-950/40 text-indigo-300 p-2 rounded-xl border border-borderDark transition" title="Pengaturan Sandi">
                     <i data-lucide="settings" class="w-4 h-4"></i>
                 </button>
 
@@ -206,7 +223,6 @@
                         </select>
                     </div>
 
-                    <!-- DROPDOWN FREKUENSI RUTIN LENGKAP & FUNGSIONAL -->
                     <div id="field-frekuensi" class="hidden">
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
                         <select id="task-frekuensi" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
@@ -540,19 +556,24 @@
             updateDeptOptions();
         }
 
-        // TANGKAP DAN SIMPAN NILAI FREKUENSI SECARA UTH KE GSHEET
+        // REVISI TOTAL PENYIMPANAN DATA TUGAS DENGAN DATA PEMBERI KOPERATIF (DPS / MFT DLL)
         async function handleSaveTask(e) {
             e.preventDefault();
             const selectedPic = document.getElementById('task-pic-target').value;
+            const targetDeptVal = document.getElementById('task-dept-target').value;
             const jenisTugasVal = document.getElementById('task-jenis').value;
             const frekuensiVal = jenisTugasVal === 'Rutin' ? document.getElementById('task-frekuensi').value : '-';
             
+            // Nama & NIK Penerima yang dipilih
+            const picNamaVal = selectedPic.split(' - ')[0] || selectedPic;
+            const picNikVal = selectedPic.split(' - ')[1] ? selectedPic.split(' - ')[1].split(' ')[0] : '';
+
             const newTask = {
                 id: 'TSK-' + Date.now().toString().slice(-5),
                 jenisTugas: jenisTugasVal,
                 judul: document.getElementById('task-title').value,
                 frekuensi: frekuensiVal,
-                deptTarget: document.getElementById('task-dept-target').value,
+                deptTarget: targetDeptVal, // DEPT TUJUAN YANG DIPILIH
                 tanggalMulai: document.getElementById('task-start').value,
                 tanggalTarget: document.getElementById('task-end').value,
                 lateWarningHari: document.getElementById('task-late').value,
@@ -560,9 +581,10 @@
                 catatanBebas: document.getElementById('task-catatan').value,
                 status: 'Menunggu Verif',
                 progress: 0,
-                picNik: selectedPic.split(' - ')[1] ? selectedPic.split(' - ')[1].split(' ')[0] : selectedPic,
-                picNama: selectedPic.split(' - ')[0] || selectedPic,
-                dept: currentUser.dept
+                picNik: picNikVal,
+                picNama: picNamaVal,
+                pemberiNik: currentUser.nik, // DPS / MFT ASLI
+                pemberiNama: currentUser.nama // DPS / MFT ASLI
             };
 
             tasksData.push(newTask);
@@ -581,22 +603,38 @@
             });
         }
 
+        // RENDER DASHBOARD TAMPILAN PRESISI & FILTERING GABUNGAN
         function renderDashboard() {
             let viewable = tasksData;
             const filterDivisi = document.getElementById('filter-divisi-header')?.value || 'ALL';
+            const filterJenis = document.getElementById('filter-jenis-header')?.value || 'ALL';
 
-            if (filterDivisi !== 'ALL') {
-                viewable = tasksData.filter(t => (t.deptTarget || t.Dept || t.dept) === filterDivisi || t.divisi === filterDivisi);
-            }
-
+            // 1. FILTER BERDASARKAN USER LOGIN (Penerima ATAU Pemberi ATAU Dewan Direksi/Super Admin)
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
 
             if (!isSuperAdminOrDireksi) {
                 const userDivs = currentUser.divisiList || [currentUser.dept];
-                viewable = viewable.filter(t => userDivs.includes(t.deptTarget) || userDivs.includes(t.dept) || userDivs.includes(t.divisi));
+                viewable = viewable.filter(t => 
+                    userDivs.includes(t.DeptTarget || t.deptTarget) || 
+                    userDivs.includes(t.Dept || t.dept) || 
+                    String(t.PIC_NIK || t.picNik).trim() === String(currentUser.nik).trim() ||
+                    String(t.PemberiNIK || t.pemberiNik).trim() === String(currentUser.nik).trim()
+                );
             }
 
+            // 2. FILTER DIVISI
+            if (filterDivisi !== 'ALL') {
+                viewable = viewable.filter(t => (t.DeptTarget || t.deptTarget || t.Dept || t.dept) === filterDivisi || t.divisi === filterDivisi);
+            }
+
+            // 3. FILTER JENIS TUGAS (PROJECT VS RUTIN)
+            if (filterJenis !== 'ALL') {
+                viewable = viewable.filter(t => String(t.JenisTugas || t.jenisTugas).toLowerCase().includes(filterJenis.toLowerCase()));
+            }
+
+            // UPDATE STATISTIK CARDS & BADGE NOTIFIKASI
             document.getElementById('stat-total').innerText = viewable.length;
+            document.getElementById('notif-badge').innerText = viewable.length;
 
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
@@ -604,17 +642,47 @@
                 return;
             }
 
-            tbody.innerHTML = viewable.map(t => `
-                <tr class="hover:bg-cardBg/50 transition">
-                    <td class="py-3 px-4 font-mono font-bold text-white">${t.TaskID || t.id}<br><span class="text-[10px] text-brandPurple">${t.JenisTugas || t.jenisTugas} ${t.Frekuensi ? '(' + t.Frekuensi + ')' : ''}</span></td>
-                    <td class="py-3 px-4 font-semibold text-white">${t.Judul || t.judul}</td>
-                    <td class="py-3 px-4"><span class="text-gray-400">${t.PIC_Nama || t.picNama}</span> ➔ <span class="text-indigo-300 font-bold">${t.picNama || t.PIC_NIK || '-'}</span></td>
-                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-indigo-300">${t.deptTarget || t.Dept || t.dept}</span></td>
-                    <td class="py-3 px-4 font-mono text-amber-400">${t.TanggalTarget || t.tanggalTarget}</td>
-                    <td class="py-3 px-4"><span class="px-2.5 py-1 bg-cardBg border border-borderDark rounded-full text-[10px] font-bold text-indigo-300">${t.Status || t.status}</span></td>
-                    <td class="py-3 px-4 text-right"><span class="text-[10px] text-emerald-400 font-mono font-bold">Aktif</span></td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = viewable.map(t => {
+                const id = t.TaskID || t.id;
+                const jenis = t.JenisTugas || t.jenisTugas;
+                const freq = t.Frekuensi || t.frekuensi;
+                const freqText = (jenis === 'Rutin' && freq && freq !== '-') ? `(${freq})` : '';
+                
+                const judul = t.Judul || t.judul;
+                
+                // PEMBERI HASIL REVISI: DPS / MFT (PEMBERI) ➔ DCH (PENERIMA)
+                const pemberi = t.PemberiNama || t.pemberiNama || t.PemberiNIK || t.pemberiNik || 'Atasan';
+                const penerima = t.PIC_Nama || t.picNama || t.PIC_NIK || t.picNik;
+                
+                // DEPT TARGET HASIL REVISI (IT / SDM DLL BUKAN DIREKSI)
+                const deptTujuan = t.DeptTarget || t.deptTarget || t.Dept || t.dept;
+                
+                const deadline = t.TanggalTarget || t.tanggalTarget || '-';
+                const status = t.Status || t.status || 'Menunggu Verif';
+
+                return `
+                    <tr class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
+                        <td class="py-3 px-4 font-mono font-bold text-white">
+                            ${id}<br>
+                            <span class="text-[10px] text-brandPurple font-semibold">${jenis} ${freqText}</span>
+                        </td>
+                        <td class="py-3 px-4 font-semibold text-white">${judul}</td>
+                        <td class="py-3 px-4">
+                            <span class="text-indigo-300 font-bold">${pemberi}</span> ➔ <span class="text-emerald-400 font-bold">${penerima}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-1 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-amber-300">${deptTujuan}</span>
+                        </td>
+                        <td class="py-3 px-4 font-mono text-amber-400">${deadline}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-1 bg-cardBg border border-borderDark rounded-full text-[10px] font-bold text-indigo-300">${status}</span>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <span class="text-[10px] text-emerald-400 font-mono font-bold">Aktif</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
 
             lucide.createIcons();
         }
