@@ -400,14 +400,14 @@
             updatePICOptions();
         }
 
-        // HIERARKI PENUGASAN REVISI PRESISI SANGAT LENGKAP
+        // AKURASI SANGAT KETAT: MENCEGAH PEGAWAI DEPT LAIN BOCOR KELUAR!
         function updatePICOptions() {
             const selectedDivisi = document.getElementById('task-divisi-target').value;
             const selectedDept = document.getElementById('task-dept-target').value;
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
 
-            // Cari pimpinan/manajer utama divisi/dept ini dari Master Hirearki Jabatan
+            // Cari pimpinan/manajer spesifik yang membawahi departemen/divisi ini
             const deptManagerRows = masterHirearki.filter(h => 
                 String(h.Departemen || h.departemen || '').trim() === String(selectedDept).trim() ||
                 String(h.Divisi || h.divisi || '').trim() === String(selectedDivisi).trim()
@@ -418,23 +418,20 @@
             const filteredPegawai = masterUsers.filter(u => {
                 if (String(u.nik) === String(currentUser.nik)) return false; // Jangan tampilkan diri sendiri
 
-                // PERBAIKAN PENTING 1: MENCEGAH DIREKTUR (MFT) MENUGASKAN DIREKTUR UTAMA (DPS)
-                if (currentUser.jabatan === 'Direktur' && u.jabatan === 'Direktur Utama') {
-                    return false; // DIREKTUR UTAMA ADALAH ATASAN DARI DIREKTUR!
-                }
+                // Mencegah Direktur MFT menugaskan Direktur Utama DPS
+                if (currentUser.jabatan === 'Direktur' && u.jabatan === 'Direktur Utama') return false;
 
-                // Cek apakah pegawai ini adalah pimpinan/manajer di divisi/dept terpilih (Misal AHW di Mikrobiologi)
-                const isDeptManager = deptManagerJabatans.includes(u.jabatan);
+                // ATURAN SANGAT KETAT 1: Staf HARUS 100% PERSIS KELUAR DI DEPARTEMENNYA SENDIRI!
+                const isExactDeptMember = String(u.dept).trim() === String(selectedDept).trim();
 
-                // Cek apakah pegawai ini staf/bawahan di departemen terpilih
-                const matchDept = String(u.dept).trim() === String(selectedDept).trim();
+                // ATURAN SANGAT KETAT 2: Manajer Boleh Muncul Jika Dia Membawahi Dept/Divisi Tersebut
+                const isDeptManager = deptManagerJabatans.includes(u.jabatan) && (u.level === 'Manajer' || u.level === 'Manager');
 
-                // Pegawai valid jika dia adalah Staf di dept tersebut ATAU Manajer yang membawahi dept tersebut!
-                if (!matchDept && !isDeptManager) return false;
+                if (!isExactDeptMember && !isDeptManager) return false;
 
-                // Restriksi Hierarki: Tidak boleh menugaskan atasan langsung
-                if (currentUser.jabatan === 'Direktur Utama') return true; // Direktur Utama bebas menugaskan siapapun
-                if (currentUser.level === 'Direksi' && u.level !== 'Direksi') return true; // Direksi menugaskan non-direksi
+                // Restriksi Atasan
+                if (currentUser.jabatan === 'Direktur Utama') return true;
+                if (currentUser.level === 'Direksi' && u.level !== 'Direksi') return true;
 
                 return true;
             });
