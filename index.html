@@ -6,18 +6,12 @@
     <title>Granostic Enterprise Command System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: { extend: { colors: { darkBg: '#0b0d12', panelBg: '#13161f', cardBg: '#1c202c', borderDark: '#2a2f40', brandPurple: '#6366f1' } } }
         }
     </script>
-    <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0b0d12; }
-        ::-webkit-scrollbar-thumb { background: #2a2f40; border-radius: 4px; }
-    </style>
 </head>
 <body class="bg-darkBg text-gray-200 h-full font-sans flex flex-col antialiased">
 
@@ -26,7 +20,7 @@
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxMz_IC3RuM9jxrAsdJ4f8a-qtZ1DZB0zzp-VLh1XkNzaZEkRVHLqS96gU1PguT7m3L/exec';
     </script>
 
-    <!-- PORTAL LOGIN HIGH-TECH -->
+    <!-- PORTAL LOGIN -->
     <div id="login-view" class="flex-1 flex flex-col md:flex-row h-screen">
         <div class="md:w-1/2 bg-gradient-to-br from-indigo-950 via-slate-950 to-black p-10 flex flex-col justify-between border-r border-borderDark relative overflow-hidden">
             <div class="absolute -right-20 -top-20 w-80 h-80 bg-brandPurple/10 rounded-full blur-3xl"></div>
@@ -44,7 +38,7 @@
                     <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
                         <i data-lucide="target" class="w-4 h-4"></i> Visi Strategis Korporasi
                     </h3>
-                    <p class="text-xs text-gray-300 mt-2 leading-relaxed">Menjadi garda terdepan layanan medis berakurasi tinggi dengan disiplin hierarki presisi dan terintegrasi digital sepenuhnya.</p>
+                    <p class="text-xs text-gray-300 mt-2 leading-relaxed">Menjadi fasilitas layanan kesehatan terpilih dan terpercaya.</p>
                 </div>
             </div>
             <div class="relative z-10 text-[11px] text-gray-500 font-mono">
@@ -56,7 +50,7 @@
             <div class="max-w-md w-full mx-auto space-y-6">
                 <div>
                     <h2 class="text-2xl font-extrabold text-white">Portal Autentikasi</h2>
-                    <p class="text-xs text-gray-400 mt-1">Masukkan NIK dan Password yang terdaftar pada sistem.</p>
+                    <p class="text-xs text-gray-400 mt-1">Masukkan NIK dan Password terdaftar Anda.</p>
                 </div>
 
                 <div id="login-error" class="hidden bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs p-3 rounded-xl flex items-center justify-between">
@@ -83,7 +77,6 @@
 
     <!-- MAIN DASHBOARD SYSTEM -->
     <div id="dashboard-view" class="hidden flex-1 flex flex-col h-screen overflow-hidden">
-        <!-- TOP HEADER WITH FILTER PER DEPT -->
         <header class="bg-panelBg border-b border-borderDark px-6 py-3 flex justify-between items-center z-30 shrink-0">
             <div class="flex items-center gap-3">
                 <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl text-white">
@@ -96,18 +89,12 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- DROPDOWN FILTER PER DEPARTEMEN -->
+                <!-- DROPDOWN FILTER PER DEPARTEMEN DARI GSHEET -->
                 <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
                     <i data-lucide="filter" class="w-3.5 h-3.5 text-brandPurple"></i>
                     <span class="text-[10px] font-bold text-gray-400 uppercase">Filter Dept:</span>
                     <select id="filter-dept-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
                         <option value="ALL" class="bg-cardBg">🏛️ Semua Departemen</option>
-                        <option value="Klinik" class="bg-cardBg">🩺 Klinik</option>
-                        <option value="HR" class="bg-cardBg">👥 Human Resources (HR)</option>
-                        <option value="GA" class="bg-cardBg">🏢 General Affairs (GA)</option>
-                        <option value="IT" class="bg-cardBg">💻 Information Tech (IT)</option>
-                        <option value="Finance" class="bg-cardBg">💰 Finance & Accounting</option>
-                        <option value="Laboratorium" class="bg-cardBg">🔬 Laboratorium</option>
                     </select>
                 </div>
 
@@ -121,9 +108,7 @@
             </div>
         </header>
 
-        <!-- MAIN CONTENT AREA -->
         <main class="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
-            <!-- CARDS STATS -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-panelBg border border-borderDark p-4 rounded-2xl">
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Tugas Active</p>
@@ -143,7 +128,6 @@
                 </div>
             </div>
 
-            <!-- TABEL TUGAS & APPROVAL -->
             <div class="bg-panelBg border border-borderDark rounded-2xl p-5 space-y-4">
                 <div class="flex justify-between items-center border-b border-borderDark pb-3">
                     <h3 class="text-sm font-bold text-white flex items-center gap-2">
@@ -176,7 +160,7 @@
         </main>
     </div>
 
-    <!-- MODAL INPUT TUGAS (DENGAN DEPT TUJUAN DAN PIC TARGET) -->
+    <!-- MODAL INPUT TUGAS (DINAMIS DARI MASTERDATABASE GSHEET) -->
     <div id="modal-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -189,25 +173,22 @@
             <form onsubmit="handleSaveTask(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-gray-300 mb-1">Judul Pekerjaan</label>
-                    <input type="text" id="task-title" required placeholder="Contoh: Renovasi Gedung / Audit Operasional" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                    <input type="text" id="task-title" required placeholder="Contoh: Renovasi Gedung / Laporan Bulanan" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
                 </div>
 
-                <!-- DEPARTEMEN TUJUAN DAN PIC TARGET -->
+                <!-- DROPDOWN DINAMIS DEPT & PIC DARI MASTER DATABASE -->
                 <div class="grid grid-cols-2 gap-2 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <div>
                         <label class="block font-semibold text-indigo-400 mb-1">Tugaskan Ke Dept:</label>
-                        <select id="task-dept-target" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none">
-                            <option value="Klinik">Klinik</option>
-                            <option value="HR">Human Resources (HR)</option>
-                            <option value="GA">General Affairs (GA)</option>
-                            <option value="IT">Information Tech (IT)</option>
-                            <option value="Finance">Finance & Accounting</option>
-                            <option value="Laboratorium">Laboratorium</option>
+                        <select id="task-dept-target" onchange="updatePICOptions()" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
+                            <!-- Dynamic Options -->
                         </select>
                     </div>
                     <div>
-                        <label class="block font-semibold text-indigo-400 mb-1">PIC Penerima (NIK / Nama):</label>
-                        <input type="text" id="task-pic-target" required placeholder="Contoh: 220200 (Budi)" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none">
+                        <label class="block font-semibold text-indigo-400 mb-1">PIC Penerima (Nama - NIK):</label>
+                        <select id="task-pic-target" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
+                            <!-- Dynamic Options -->
+                        </select>
                     </div>
                 </div>
 
@@ -267,9 +248,9 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGIKA UTAMA -->
     <script>
         let currentUser = null;
+        let masterUsers = [];
         let tasksData = [];
 
         async function handleLogin(e) {
@@ -282,13 +263,13 @@
             errBox.classList.add('hidden');
 
             if (!GAS_URL || GAS_URL.includes('PASTE_WEB_APP_URL_GAS_DI_SINI')) {
-                document.getElementById('login-error-msg').innerText = 'ERROR: GAS_URL belum diisi di index.html!';
+                document.getElementById('login-error-msg').innerText = 'ERROR: GAS_URL belum diisi!';
                 errBox.classList.remove('hidden');
                 return;
             }
 
             btn.disabled = true;
-            btn.innerText = 'MEMVERIFIKASI KE GSHEET...';
+            btn.innerText = 'MEMVERIFIKASI...';
 
             try {
                 const response = await fetch(GAS_URL, {
@@ -299,12 +280,14 @@
 
                 if (res.status === 'success') {
                     currentUser = res.user;
+                    masterUsers = res.masterUsers || [];
+
                     document.getElementById('login-view').classList.add('hidden');
                     document.getElementById('dashboard-view').classList.remove('hidden');
                     document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Dept: ${currentUser.dept} | Role: ${currentUser.role}`;
 
-                    // Set default dept target pada form input tugas ke dept pengguna saat ini
-                    document.getElementById('task-dept-target').value = currentUser.dept || 'Klinik';
+                    // Populate Master Departemen & Restriksi Pembatasan Tugas
+                    setupMasterDataUI();
 
                     lucide.createIcons();
                     fetchDataFromGAS();
@@ -320,6 +303,57 @@
                 btn.disabled = false;
                 btn.innerText = 'MASUK SECURE PORTAL';
             }
+        }
+
+        function setupMasterDataUI() {
+            // 1. Ekstrak seluruh daftar Departemen unik dari GSheet MasterDatabase
+            const depts = [...new Set(masterUsers.map(u => u.dept).filter(Boolean))];
+
+            // 2. Populate Header Filter
+            const headerSelect = document.getElementById('filter-dept-header');
+            headerSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Departemen</option>`;
+            depts.forEach(d => {
+                headerSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
+            });
+
+            // 3. Populate Form Dept Target Sesuai RESTRIKSI HAK AKSES
+            const taskDeptSelect = document.getElementById('task-dept-target');
+            taskDeptSelect.innerHTML = '';
+
+            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
+
+            if (isSuperAdminOrDireksi) {
+                // Direksi / Super Admin bebas memilih semua dept
+                depts.forEach(d => {
+                    taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                });
+                taskDeptSelect.disabled = false;
+            } else {
+                // MANAGER / SPV KETERBATASAN HANYA DEPT-NYA SENDIRI!
+                taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
+                taskDeptSelect.disabled = true; // Lock dropdown!
+            }
+
+            updatePICOptions();
+        }
+
+        function updatePICOptions() {
+            const selectedDept = document.getElementById('task-dept-target').value;
+            const picSelect = document.getElementById('task-pic-target');
+            picSelect.innerHTML = '';
+
+            // Filter pegawai berdasarkan departemen terpilih
+            const filteredPegawai = masterUsers.filter(u => u.dept === selectedDept);
+
+            if (filteredPegawai.length === 0) {
+                picSelect.innerHTML = `<option value="">Tidak ada pegawai di dept ini</option>`;
+                return;
+            }
+
+            // POPULATE FORMAT MODEL: NAMA - NIK
+            filteredPegawai.forEach(p => {
+                picSelect.innerHTML += `<option value="${p.nama} - ${p.nik}">${p.nama} - ${p.nik}</option>`;
+            });
         }
 
         function logout() {
@@ -358,17 +392,19 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('task-start').value = today;
             document.getElementById('task-end').value = today;
+            updatePICOptions();
         }
 
         async function handleSaveTask(e) {
             e.preventDefault();
+            const selectedPic = document.getElementById('task-pic-target').value;
+            
             const newTask = {
                 id: 'TSK-' + Date.now().toString().slice(-5),
                 jenisTugas: document.getElementById('task-jenis').value,
                 judul: document.getElementById('task-title').value,
                 frekuensi: document.getElementById('task-frekuensi').value,
                 deptTarget: document.getElementById('task-dept-target').value,
-                picTarget: document.getElementById('task-pic-target').value,
                 tanggalMulai: document.getElementById('task-start').value,
                 tanggalTarget: document.getElementById('task-end').value,
                 lateWarningHari: document.getElementById('task-late').value,
@@ -376,8 +412,8 @@
                 catatanBebas: document.getElementById('task-catatan').value,
                 status: 'Menunggu Verif',
                 progress: 0,
-                picNik: currentUser.nik,
-                picNama: currentUser.nama,
+                picNik: selectedPic.split(' - ')[1] || selectedPic,
+                picNama: selectedPic.split(' - ')[0] || selectedPic,
                 dept: currentUser.dept
             };
 
@@ -387,7 +423,13 @@
 
             await fetch(GAS_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'addTask', payload: newTask })
+                body: JSON.stringify({ 
+                    action: 'addTask', 
+                    payload: newTask,
+                    actorNik: currentUser.nik,
+                    actorNama: currentUser.nama,
+                    actorDept: currentUser.dept
+                })
             });
         }
 
@@ -395,16 +437,16 @@
             let viewable = tasksData;
             const filterDept = document.getElementById('filter-dept-header')?.value || 'ALL';
 
-            // Filter Berdasarkan Header Filter Dept
             if (filterDept !== 'ALL') {
                 viewable = tasksData.filter(t => (t.deptTarget || t.Dept || t.dept) === filterDept);
             }
 
-            // Filter Hierarki Hak Akses
-            if (currentUser.role === 'STAF' || currentUser.level === 'Staf') {
-                viewable = viewable.filter(t => String(t.picTarget || t.picNik) === String(currentUser.nik) || String(t.picNik) === String(currentUser.nik));
-            } else if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'DIREKSI' && currentUser.level !== 'Dewan Direksi') {
-                viewable = viewable.filter(t => (t.deptTarget || t.dept) === currentUser.dept || t.dept === currentUser.dept);
+            // RESTRIKSI HAK AKSES VIEW TABLE
+            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
+
+            if (!isSuperAdminOrDireksi) {
+                // User biasa (Manager / SPV / Staf) HANYA BISA LIHAT TUGAS DI DEPARTEMENNYA SENDIRI
+                viewable = viewable.filter(t => (t.deptTarget || t.Dept || t.dept) === currentUser.dept);
             }
 
             document.getElementById('stat-total').innerText = viewable.length;
@@ -419,7 +461,7 @@
                 <tr class="hover:bg-cardBg/50 transition">
                     <td class="py-3 px-4 font-mono font-bold text-white">${t.TaskID || t.id}<br><span class="text-[10px] text-brandPurple">${t.JenisTugas || t.jenisTugas}</span></td>
                     <td class="py-3 px-4 font-semibold text-white">${t.Judul || t.judul}</td>
-                    <td class="py-3 px-4"><span class="text-gray-400">${t.PIC_Nama || t.picNama}</span> ➔ <span class="text-indigo-300 font-bold">${t.picTarget || t.PIC_NIK || '-'}</span></td>
+                    <td class="py-3 px-4"><span class="text-gray-400">${t.PIC_Nama || t.picNama}</span> ➔ <span class="text-indigo-300 font-bold">${t.picNama || t.PIC_NIK || '-'} (${t.picNik || '-'})</span></td>
                     <td class="py-3 px-4"><span class="px-2 py-0.5 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-indigo-300">${t.deptTarget || t.Dept || t.dept}</span></td>
                     <td class="py-3 px-4 font-mono text-amber-400">${t.TanggalTarget || t.tanggalTarget}</td>
                     <td class="py-3 px-4"><span class="px-2.5 py-1 bg-cardBg border border-borderDark rounded-full text-[10px] font-bold text-indigo-300">${t.Status || t.status}</span></td>
