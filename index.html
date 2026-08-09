@@ -132,7 +132,7 @@
         </header>
 
         <main class="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
-            <!-- 5. BOKS DASHBOARD BESAR INDIKATOR TUGAS LENGKAP -->
+            <!-- 6 BOKS DASHBOARD BESAR INDIKATOR TUGAS -->
             <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
                 <div class="bg-panelBg border border-borderDark p-3.5 rounded-2xl">
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Tugas Aktif</p>
@@ -168,7 +168,7 @@
                     </h3>
 
                     <div class="flex items-center gap-2">
-                        <!-- 4. FILTER JENIS TUGAS -->
+                        <!-- FILTER JENIS TUGAS -->
                         <div class="flex items-center gap-1.5 bg-cardBg border border-borderDark rounded-xl px-2.5 py-1.5">
                             <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
                             <span class="text-[10px] font-bold text-gray-400 uppercase">Jenis:</span>
@@ -179,17 +179,17 @@
                             </select>
                         </div>
 
-                        <!-- 4. FILTER STATUS TUGAS -->
+                        <!-- FILTER STATUS TUGAS PRESISI -->
                         <div class="flex items-center gap-1.5 bg-cardBg border border-borderDark rounded-xl px-2.5 py-1.5">
                             <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-indigo-400"></i>
                             <span class="text-[10px] font-bold text-gray-400 uppercase">Status:</span>
                             <select id="filter-status-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
                                 <option value="ALL" class="bg-cardBg">Semua Status</option>
-                                <option value="In Progress" class="bg-cardBg">In Progress / Verif</option>
-                                <option value="Early Warning" class="bg-cardBg">Early Warning</option>
-                                <option value="Late Warning" class="bg-cardBg">Late Warning</option>
-                                <option value="Selesai" class="bg-cardBg">Selesai / Approved</option>
-                                <option value="Overdue" class="bg-cardBg">Overdue / Terlewat</option>
+                                <option value="PROGRESS" class="bg-cardBg">In Progress / Verif</option>
+                                <option value="EARLY" class="bg-cardBg">Early Warning</option>
+                                <option value="LATE" class="bg-cardBg">Late Warning</option>
+                                <option value="DONE" class="bg-cardBg">Selesai / Approved</option>
+                                <option value="OVERDUE" class="bg-cardBg">Overdue / Terlewat</option>
                             </select>
                         </div>
 
@@ -361,7 +361,6 @@
         let tasksData = [];
         let readNotifications = JSON.parse(localStorage.getItem('read_notifs') || '[]');
 
-        // UTILITY HELPER UNTUK MEMBACA PROPERTI TUGAS scr KONSISTEN (KAPITAL ATAU KECIL)
         function getProp(obj, keys) {
             for (let k of keys) {
                 if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
@@ -610,7 +609,6 @@
             updateDeptOptions();
         }
 
-        // SIMPAN TUGAS
         async function handleSaveTask(e) {
             e.preventDefault();
             const selectedPic = document.getElementById('task-pic-target').value;
@@ -671,14 +669,12 @@
             }
         });
 
-        // 3. DIKLIK NOTIFIKASI TUGAS: BUKA DAN RESET FILTER AGAR PASTI TAMPIL!
         function markNotifRead(taskId) {
             if (!readNotifications.includes(taskId)) {
                 readNotifications.push(taskId);
                 localStorage.setItem('read_notifs', JSON.stringify(readNotifications));
             }
 
-            // RESET FILTER AGAR TUGAS LANGSUNG KELUAR DI TABEL
             document.getElementById('filter-divisi-header').value = 'ALL';
             document.getElementById('filter-jenis-header').value = 'ALL';
             document.getElementById('filter-status-header').value = 'ALL';
@@ -697,7 +693,25 @@
             document.getElementById('notif-dropdown').classList.add('hidden');
         }
 
-        // RENDER DASHBOARD UTAMA
+        // FUNGSI UNTUK MENGAMBIL NAMA PEMBERI TUGAS ASLI DARI NIK
+        function resolvePemberiNama(t) {
+            let pNama = getProp(t, ['PemberiNama', 'pemberiNama', 'Pemberi_Nama']);
+            let pNik = getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']);
+
+            if (pNama && pNama.toLowerCase() !== 'atasan') {
+                return pNama;
+            }
+
+            if (pNik) {
+                let foundUser = masterUsers.find(u => String(u.nik).trim() === String(pNik).trim());
+                if (foundUser) return foundUser.nama;
+            }
+
+            // Jika tidak ada NIK pemberi khusus tapi dibuat oleh Direktur / Atasan
+            return 'DPS';
+        }
+
+        // RENDER DASHBOARD UTAMA PRESISI
         function renderDashboard() {
             let viewable = tasksData;
 
@@ -707,7 +721,7 @@
 
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
 
-            // 1 & 2. LOGIKA HIERARKI PERIZINAN PEMBACAAN TUGAS (TIDAK AKAN HILANG LAGI)
+            // 1. DCH DAPAT MEMBACA TUGAS SELURUH DIVISI SDM, UMUM, & TI
             if (!isSuperAdminOrDireksi) {
                 const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => d.toLowerCase());
                 const userDept = currentUser.dept.toLowerCase();
@@ -720,24 +734,28 @@
                     const divisiTarget = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']).toLowerCase();
 
                     const isMine = (picNik === userNik) || (pemberiNik === userNik);
-                    const isMyDept = userDivs.includes(deptTarget) || userDivs.includes(divisiTarget) || (deptTarget === userDept);
+                    
+                    // Cek jika target dept termasuk bagian dari divisi user (termasuk Operasional Umum untuk DCH)
+                    const isMyDivisi = userDivs.some(ud => ud.includes('sdm') || ud.includes('umum') || ud.includes('ti')) ? 
+                                       (deptTarget.includes('sdm') || deptTarget.includes('umum') || deptTarget.includes('ti') || deptTarget.includes('operasional')) : 
+                                       userDivs.includes(deptTarget) || userDivs.includes(divisiTarget) || (deptTarget === userDept);
 
-                    return isMine || isMyDept;
+                    return isMine || isMyDivisi;
                 });
             }
 
-            // FILTER DIVISI DENGAN PENCATATAN LONGGAR / BEBAS KAPITAL
+            // FILTER DIVISI HEADER
             if (filterDivisi !== 'ALL') {
                 const fDivLower = filterDivisi.toLowerCase();
                 viewable = viewable.filter(t => {
                     const deptTarget = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']).toLowerCase();
                     const divisiTarget = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']).toLowerCase();
                     
-                    return deptTarget.includes(fDivLower) || divisiTarget.includes(fDivLower) || fDivLower.includes(deptTarget);
+                    return deptTarget.includes(fDivLower) || divisiTarget.includes(fDivLower) || fDivLower.includes(deptTarget) || fDivLower.includes('sdm');
                 });
             }
 
-            // FILTER JENIS TUGAS (PROJECT VS RUTIN)
+            // FILTER JENIS TUGAS
             if (filterJenis !== 'ALL') {
                 viewable = viewable.filter(t => {
                     const jenis = getProp(t, ['JenisTugas', 'jenisTugas']);
@@ -745,18 +763,24 @@
                 });
             }
 
-            // FILTER STATUS TUGAS
+            // FILTER STATUS TUGAS PERBAIKAN PENCATATAN PRESISI
             if (filterStatus !== 'ALL') {
                 viewable = viewable.filter(t => {
-                    const status = getProp(t, ['Status', 'status']);
-                    return status.toLowerCase().includes(filterStatus.toLowerCase());
+                    const st = getProp(t, ['Status', 'status']).toUpperCase();
+                    if (filterStatus === 'PROGRESS') return st.includes('VERIF') || st.includes('PROGRESS') || st.includes('AKTIF');
+                    if (filterStatus === 'EARLY') return st.includes('EARLY');
+                    if (filterStatus === 'LATE') return st.includes('LATE');
+                    if (filterStatus === 'DONE') return st.includes('SELESAI') || st.includes('APPROVED');
+                    if (filterStatus === 'OVERDUE') return st.includes('OVERDUE') || st.includes('TERLEWAT');
+                    return true;
                 });
             }
 
             // NOTIFIKASI KHUSUS PENERIMA TUGAS
             const myReceivedTasks = tasksData.filter(t => {
                 const picNik = getProp(t, ['PIC_NIK', 'picNik']);
-                return picNik === String(currentUser.nik).trim();
+                const picNama = getProp(t, ['PIC_Nama', 'picNama']);
+                return picNik === String(currentUser.nik).trim() || picNama.includes(currentUser.nama);
             });
 
             const unreadTasks = myReceivedTasks.filter(t => {
@@ -783,7 +807,7 @@
                 notifListElem.innerHTML = myReceivedTasks.map(t => {
                     const taskId = getProp(t, ['TaskID', 'id', 'ID']);
                     const isUnread = !readNotifications.includes(taskId);
-                    const pemberi = getProp(t, ['PemberiNama', 'pemberiNama', 'PemberiNIK', 'pemberiNik']) || 'Atasan';
+                    const pemberi = resolvePemberiNama(t);
                     const judul = getProp(t, ['Judul', 'judul']);
                     const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']);
 
@@ -799,14 +823,14 @@
                 }).join('');
             }
 
-            // 5. UPDATE STATISTIK INDIKATOR BOKS DASHBOARD BESAR (6 INDIKATOR)
+            // STATISTIK INDIKATOR BOKS DASHBOARD BESAR (6 INDIKATOR)
             let cProgress = 0, cWarning = 0, cLate = 0, cDone = 0, cOverdue = 0;
             viewable.forEach(t => {
-                const st = getProp(t, ['Status', 'status']).toLowerCase();
-                if (st.includes('selesai') || st.includes('approved')) cDone++;
-                else if (st.includes('overdue') || st.includes('terlewat')) cOverdue++;
-                else if (st.includes('early')) cWarning++;
-                else if (st.includes('late')) cLate++;
+                const st = getProp(t, ['Status', 'status']).toUpperCase();
+                if (st.includes('SELESAI') || st.includes('APPROVED')) cDone++;
+                else if (st.includes('OVERDUE') || st.includes('TERLEWAT')) cOverdue++;
+                else if (st.includes('EARLY')) cWarning++;
+                else if (st.includes('LATE')) cLate++;
                 else cProgress++;
             });
 
@@ -831,7 +855,8 @@
                 const freqText = (jenis === 'Rutin' && freq && freq !== '-') ? `(${freq})` : '';
                 const judul = getProp(t, ['Judul', 'judul']);
                 
-                const pemberi = getProp(t, ['PemberiNama', 'pemberiNama', 'PemberiNIK', 'pemberiNik']) || 'Atasan';
+                // NAMA PEMBERI DI-RESOLVE PRESISI
+                const pemberi = resolvePemberiNama(t);
                 const penerima = getProp(t, ['PIC_Nama', 'picNama', 'PIC_NIK', 'picNik']);
                 
                 const targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']) || 'SDM, Umum, & TI';
