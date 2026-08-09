@@ -25,23 +25,17 @@
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxMz_IC3RuM9jxrAsdJ4f8a-qtZ1DZB0zzp-VLh1XkNzaZEkRVHLqS96gU1PguT7m3L/exec';
     </script>
 
-    <!-- PORTAL LOGIN (UI ELEGAN SESUAI DENGAN REVISI PERUBAHAN LOGO DARI YANG MULIA) -->
+    <!-- PORTAL LOGIN -->
     <div id="login-view" class="flex-1 flex flex-col md:flex-row h-screen">
         <div class="md:w-1/2 bg-gradient-to-br from-indigo-950 via-slate-950 to-black p-10 flex flex-col justify-between border-r border-borderDark relative overflow-hidden">
             <div class="relative z-10 space-y-5 my-auto max-w-md">
-                
-                <!-- LOGO RESMI UTAMA -->
                 <div class="mb-4">
                     <img src="https://lh3.googleusercontent.com/d/1Bo0fEb-lIgrCfHMjO8G6a4rd0L9rn5CC" alt="Granostic Logo" class="h-14 w-auto object-contain">
                 </div>
-
-                <!-- NAMA PERUSAHAAN RATA KIRI SEJAJAR BOX VISI -->
                 <div class="space-y-1">
                     <h1 class="text-2xl font-extrabold tracking-wider text-white">PT. PERSADA MEDIKA UTAMA</h1>
                     <p class="text-xs text-indigo-400 font-bold tracking-widest uppercase">GRANOSTIC COMMAND SYSTEM</p>
                 </div>
-
-                <!-- BOX VISI STRATEGIS KORPORASI -->
                 <div class="bg-panelBg/80 backdrop-blur border border-borderDark p-5 rounded-2xl shadow-2xl">
                     <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2 mb-2">
                         <i data-lucide="target" class="w-4 h-4"></i> Visi Strategis Korporasi
@@ -49,7 +43,6 @@
                     <p class="text-xs text-gray-300 leading-relaxed">Menjadi fasilitas layanan kesehatan terpilih dan terpercaya.</p>
                 </div>
             </div>
-            
             <div class="relative z-10 text-[11px] text-gray-500 font-mono">
                 &copy; 2026 PT Persada Medika Utama • Real-time GSheet Sync
             </div>
@@ -86,25 +79,22 @@
 
     <!-- MAIN DASHBOARD SYSTEM -->
     <div id="dashboard-view" class="hidden flex-1 flex flex-col h-screen overflow-hidden">
-        <!-- TOP HEADER -->
         <header class="bg-panelBg border-b border-borderDark px-6 py-3 flex justify-between items-center z-30 shrink-0">
             <div class="flex items-center gap-3">
-                <!-- LOGO ICON HEADER BARU -->
                 <img src="https://lh3.googleusercontent.com/d/13fYVo8GG4_R75m5fcqNieWpTnePyB0cb" alt="Granostic Icon" class="h-8 w-auto object-contain">
                 <div>
                     <h1 class="text-sm font-extrabold text-white">PT. PERSADA MEDIKA UTAMA</h1>
-                    <!-- PENAMPILAN DATA AKUN LENGKAP (JABATAN, DEPT, DIVISI) -->
                     <p class="text-[11px] text-indigo-400 font-mono" id="header-user-status">User: - | NIK: - | Jabatan: - | Dept: - | Divisi: -</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- DROPDOWN FILTER PER DEPARTEMEN -->
+                <!-- DROPDOWN FILTER BERANDA DIGANTI DENGAN FILTER DIVISI -->
                 <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
                     <i data-lucide="filter" class="w-3.5 h-3.5 text-brandPurple"></i>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">Filter Dept:</span>
-                    <select id="filter-dept-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
-                        <option value="ALL" class="bg-cardBg">🏛️ Semua Departemen</option>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">Filter Divisi:</span>
+                    <select id="filter-divisi-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
+                        <!-- Dynamic Options Sesuai Hak Akses -->
                     </select>
                 </div>
 
@@ -112,7 +102,6 @@
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Input Tugas
                 </button>
 
-                <!-- TOMBOL SETTING / UBAH PASSWORD (IKON GERIGI) -->
                 <button onclick="openChangePassModal()" class="bg-cardBg hover:bg-indigo-950/40 text-indigo-300 p-2 rounded-xl border border-borderDark transition" title="Pengaturan Sandi / Account">
                     <i data-lucide="settings" class="w-4 h-4"></i>
                 </button>
@@ -123,7 +112,6 @@
             </div>
         </header>
 
-        <!-- MAIN CONTENT -->
         <main class="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-panelBg border border-borderDark p-4 rounded-2xl">
@@ -176,7 +164,7 @@
         </main>
     </div>
 
-    <!-- MODAL 1: INPUT TUGAS (VALIDASI DATA DARI MASTER HIERARKI JABATAN) -->
+    <!-- MODAL 1: INPUT TUGAS -->
     <div id="modal-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -192,7 +180,6 @@
                     <input type="text" id="task-title" required placeholder="Contoh: Renovasi Gedung / Laporan Bulanan" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
                 </div>
 
-                <!-- DROPDOWN DIVISI & DEPARTEMEN DARI MASTER HIREARKI JABATAN -->
                 <div class="grid grid-cols-2 gap-2 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <div>
                         <label class="block font-semibold text-indigo-400 mb-1">Tugaskan Ke Div / Dept:</label>
@@ -264,7 +251,7 @@
         </div>
     </div>
 
-    <!-- MODAL 2: UBAH PASSWORD (SETTING IKON GERIGI) -->
+    <!-- MODAL 2: UBAH PASSWORD -->
     <div id="modal-changepass" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-md p-6 space-y-4">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -334,7 +321,6 @@
                     document.getElementById('login-view').classList.add('hidden');
                     document.getElementById('dashboard-view').classList.remove('hidden');
                     
-                    // PENAMPILAN DATA AKUN SANGAT LENGKAP (JABATAN, DEPT, DIVISI)
                     document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Dept: ${currentUser.dept} | Divisi: ${currentUser.divisi}`;
 
                     setupMasterDataUI();
@@ -355,21 +341,32 @@
         }
 
         function setupMasterDataUI() {
-            // POPULATE DROPDOWN DARI SHEET MASTER HIREARKI JABATAN (NILAI UNIK DEPARTEMEN)
-            const deptsFromHirearki = [...new Set(masterHirearki.map(h => h.Departemen || h.departemen).filter(Boolean))];
+            // 1. Ekstrak seluruh Divisi unik dari Master Hirearki Jabatan
+            const divisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
 
-            // Header Filter
-            const headerSelect = document.getElementById('filter-dept-header');
-            headerSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Departemen</option>`;
-            deptsFromHirearki.forEach(d => {
-                headerSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
-            });
+            const headerDivisiSelect = document.getElementById('filter-divisi-header');
+            headerDivisiSelect.innerHTML = '';
 
-            // Form Target Dept Input Task Sesuai Hierarki
+            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
+
+            // 2. FILTER BERANDA DIVISI KETAT SESUAI HAK AKSES
+            if (isSuperAdminOrDireksi) {
+                headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
+                divisiList.forEach(d => {
+                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
+                });
+                headerDivisiSelect.disabled = false;
+            } else {
+                // USER BIASA (DNI, AHW, DCH, DLL) DILOCK HANYA PADA DIVISINYA SENDIRI!
+                headerDivisiSelect.innerHTML = `<option value="${currentUser.divisi}" class="bg-cardBg">${currentUser.divisi}</option>`;
+                headerDivisiSelect.disabled = true; // TERKUNCI MATI!
+            }
+
+            // 3. Form Target Dept Input Task Sesuai Hierarki
             const taskDeptSelect = document.getElementById('task-dept-target');
             taskDeptSelect.innerHTML = '';
 
-            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
+            const deptsFromHirearki = [...new Set(masterHirearki.map(h => String(h.Departemen || h.departemen || '').trim()).filter(Boolean))];
 
             if (isSuperAdminOrDireksi) {
                 deptsFromHirearki.forEach(d => {
@@ -377,14 +374,23 @@
                 });
                 taskDeptSelect.disabled = false;
             } else {
-                taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
-                taskDeptSelect.disabled = true; // Lock dropdown untuk Manager/SPV/Staf biasa
+                // Tampilkan departemen yang berada di dalam Divisi pengguna
+                const userDeptList = [...new Set(masterHirearki.filter(h => String(h.Divisi || h.divisi || '').trim() === currentUser.divisi).map(h => String(h.Departemen || h.departemen || '').trim()))];
+                
+                if (userDeptList.length > 0) {
+                    userDeptList.forEach(d => {
+                        taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                    });
+                } else {
+                    taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
+                }
+                taskDeptSelect.disabled = false;
             }
 
             updatePICOptions();
         }
 
-        // HIERARKI PENUGASAN BERJENJANG (MENCEGAH BAWAHAN MENUGASKAN ATASAN)
+        // HIERARKI PENUGASAN PRESISI (BACA SHEET MASTER HIREARKI JABATAN)
         function updatePICOptions() {
             const selectedDept = document.getElementById('task-dept-target').value;
             const picSelect = document.getElementById('task-pic-target');
@@ -392,35 +398,36 @@
 
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
 
-            // Pemetaan urutan hierarki level jabatan
             const levelRank = {
-                'Direksi': 4,
-                'Manajer': 3,
-                'Manager': 3,
-                'Pengawas': 2,
-                'Supervisor': 2,
-                'Staff': 1,
-                'Staf': 1,
+                'Direksi': 5,
+                'Manajer': 4,
+                'Manager': 4,
+                'Pengawas': 3,
+                'Supervisor': 3,
+                'Staff': 2,
+                'Staf': 2,
                 'Non Struktural': 1
             };
 
-            const userRank = levelRank[currentUser.level] || 1;
+            const currentUserRank = levelRank[currentUser.level] || 2;
 
-            // Filter pegawai berdasarkan departemen terpilih & HIERARKI
+            // Filter pegawai yang berada di dalam lingkup yang tepat
             const filteredPegawai = masterUsers.filter(u => {
-                const matchDept = u.dept === selectedDept;
-                if (!matchDept) return false;
+                if (String(u.nik) === String(currentUser.nik)) return false; // Jangan tampilkan diri sendiri
 
-                if (isSuperAdminOrDireksi) return true; // Direksi bisa menugaskan siapapun
+                // Poin Kunci DCH: Pencocokan Pintar Divisi / Departemen SDM, Umum, & TI
+                const matchDept = (u.dept === selectedDept) || (u.divisi === currentUser.divisi);
+                if (!matchDept && !isSuperAdminOrDireksi) return false;
 
-                // MENCEGAH MENUGASKAN ATASAN:
-                // Pegawai penerima HARUS memiliki level <= level pengguna yang sedang login!
-                const targetRank = levelRank[u.level] || 1;
-                return targetRank <= userRank && String(u.nik) !== String(currentUser.nik);
+                if (isSuperAdminOrDireksi) return true;
+
+                // MENCEGAH MENUGASKAN ATASAN (MISAL DNI TIDAK BISA MENUGASKAN AHW):
+                const targetUserRank = levelRank[u.level] || 1;
+                return targetUserRank <= currentUserRank;
             });
 
             if (filteredPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada bawahan valid di dept ini</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada bawahan valid di dept/divisi ini</option>`;
                 return;
             }
 
@@ -559,16 +566,17 @@
 
         function renderDashboard() {
             let viewable = tasksData;
-            const filterDept = document.getElementById('filter-dept-header')?.value || 'ALL';
+            const filterDivisi = document.getElementById('filter-divisi-header')?.value || 'ALL';
 
-            if (filterDept !== 'ALL') {
-                viewable = tasksData.filter(t => (t.deptTarget || t.Dept || t.dept) === filterDept);
+            if (filterDivisi !== 'ALL') {
+                viewable = tasksData.filter(t => (t.deptTarget || t.Dept || t.dept) === filterDivisi || t.divisi === filterDivisi);
             }
 
-            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
+            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
 
             if (!isSuperAdminOrDireksi) {
-                viewable = viewable.filter(t => (t.deptTarget || t.Dept || t.dept) === currentUser.dept);
+                // USER BIASA HANYA BISA LIHAT TUGAS DI LINGKUP DIVISINYA
+                viewable = viewable.filter(t => (t.deptTarget || t.Dept || t.dept) === currentUser.dept || t.divisi === currentUser.divisi);
             }
 
             document.getElementById('stat-total').innerText = viewable.length;
