@@ -7,8 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -24,11 +22,11 @@
 <body class="bg-darkBg text-gray-200 h-full font-sans flex flex-col antialiased">
 
     <script>
-        // MASUKKAN URL GOOGLE APPS SCRIPT YANG MULIA DI SINI
+        // ⚠️ PASTE URL HASIL DEPLOY GOOGLE APPS SCRIPT YANG MULIA DI SINI:
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxMz_IC3RuM9jxrAsdJ4f8a-qtZ1DZB0zzp-VLh1XkNzaZEkRVHLqS96gU1PguT7m3L/exec';
     </script>
 
-    <!-- PORTAL LOGIN ELEGAN & SPORTY -->
+    <!-- PORTAL LOGIN HIGH-TECH -->
     <div id="login-view" class="flex-1 flex flex-col md:flex-row h-screen">
         <div class="md:w-1/2 bg-gradient-to-br from-indigo-950 via-slate-950 to-black p-10 flex flex-col justify-between border-r border-borderDark relative overflow-hidden">
             <div class="absolute -right-20 -top-20 w-80 h-80 bg-brandPurple/10 rounded-full blur-3xl"></div>
@@ -46,7 +44,7 @@
                     <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
                         <i data-lucide="target" class="w-4 h-4"></i> Visi Strategis Korporasi
                     </h3>
-                    <p class="text-xs text-gray-300 mt-2 leading-relaxed">Garda terdepan layanan medis berakurasi tinggi dengan disiplin hierarki presisi (Staf ➔ SPV ➔ Manager ➔ Direksi).</p>
+                    <p class="text-xs text-gray-300 mt-2 leading-relaxed">Menjadi garda terdepan layanan medis berakurasi tinggi dengan disiplin hierarki presisi dan terintegrasi digital sepenuhnya.</p>
                 </div>
             </div>
             <div class="relative z-10 text-[11px] text-gray-500 font-mono">
@@ -58,25 +56,25 @@
             <div class="max-w-md w-full mx-auto space-y-6">
                 <div>
                     <h2 class="text-2xl font-extrabold text-white">Portal Autentikasi</h2>
-                    <p class="text-xs text-gray-400 mt-1">Masukkan NIK dan Password terdaftar Anda di Google Sheets.</p>
+                    <p class="text-xs text-gray-400 mt-1">Masukkan NIK dan Password yang terdaftar pada sistem.</p>
                 </div>
 
-                <div id="login-error" class="hidden bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs p-3 rounded-xl flex items-center gap-2">
-                    <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                <div id="login-error" class="hidden bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs p-3 rounded-xl flex items-center justify-between">
                     <span id="login-error-msg">NIK atau Password Salah!</span>
+                    <button onclick="document.getElementById('login-error').classList.add('hidden')">✕</button>
                 </div>
 
                 <form onsubmit="handleLogin(event)" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">NIK (Nomor Induk Karyawan)</label>
-                        <input type="text" id="login-nik" required class="w-full bg-panelBg border border-borderDark rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brandPurple" placeholder="Contoh: 220029">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">NIK (NOMOR INDUK KARYAWAN)</label>
+                        <input type="text" id="login-nik" required class="w-full bg-panelBg border border-borderDark rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brandPurple" placeholder="Masukkan NIK">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Password</label>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">PASSWORD</label>
                         <input type="password" id="login-pass" required class="w-full bg-panelBg border border-borderDark rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brandPurple" placeholder="••••••••">
                     </div>
-                    <button type="submit" id="btn-login-submit" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg text-xs tracking-wider uppercase flex justify-center items-center gap-2">
-                        <span>Masuk Secure Portal</span>
+                    <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg text-xs tracking-wider uppercase">
+                        Masuk Secure Portal
                     </button>
                 </form>
             </div>
@@ -85,7 +83,7 @@
 
     <!-- MAIN DASHBOARD SYSTEM -->
     <div id="dashboard-view" class="hidden flex-1 flex flex-col h-screen overflow-hidden">
-        <!-- TOP HEADER -->
+        <!-- TOP HEADER WITH FILTER PER DEPT -->
         <header class="bg-panelBg border-b border-borderDark px-6 py-3 flex justify-between items-center z-30 shrink-0">
             <div class="flex items-center gap-3">
                 <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl text-white">
@@ -93,25 +91,27 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-extrabold text-white">PT. PERSADA MEDIKA UTAMA</h1>
-                    <p class="text-[11px] text-indigo-400 font-mono" id="header-user-status">User: - | NIK: - | Dept: -</p>
+                    <p class="text-[11px] text-indigo-400 font-mono" id="header-user-status">Status User</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- DROPDOWN FILTER LINTAS DEPARTEMEN KHUSUS DIREKSI & SUPER ADMIN -->
-                <div id="direksi-dept-filter-wrapper" class="hidden">
-                    <select id="direksi-dept-filter" onchange="renderDashboard()" class="bg-cardBg border border-brandPurple text-indigo-300 font-bold rounded-xl px-3 py-1.5 text-xs focus:outline-none">
-                        <option value="ALL">🏛️ Semua Departemen (Global)</option>
-                        <option value="Klinik">Klinik</option>
-                        <option value="HR">Human Resources (HR)</option>
-                        <option value="GA">General Affairs (GA)</option>
-                        <option value="IT">Information Tech (IT)</option>
-                        <option value="Finance">Finance & Accounting</option>
-                        <option value="Laboratorium">Laboratorium</option>
+                <!-- DROPDOWN FILTER PER DEPARTEMEN -->
+                <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
+                    <i data-lucide="filter" class="w-3.5 h-3.5 text-brandPurple"></i>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">Filter Dept:</span>
+                    <select id="filter-dept-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
+                        <option value="ALL" class="bg-cardBg">🏛️ Semua Departemen</option>
+                        <option value="Klinik" class="bg-cardBg">🩺 Klinik</option>
+                        <option value="HR" class="bg-cardBg">👥 Human Resources (HR)</option>
+                        <option value="GA" class="bg-cardBg">🏢 General Affairs (GA)</option>
+                        <option value="IT" class="bg-cardBg">💻 Information Tech (IT)</option>
+                        <option value="Finance" class="bg-cardBg">💰 Finance & Accounting</option>
+                        <option value="Laboratorium" class="bg-cardBg">🔬 Laboratorium</option>
                     </select>
                 </div>
 
-                <button onclick="openTaskModal()" id="btn-header-add" class="bg-brandPurple hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
+                <button onclick="openTaskModal()" class="bg-brandPurple hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Input Tugas
                 </button>
 
@@ -121,7 +121,7 @@
             </div>
         </header>
 
-        <!-- CONTENT AREA -->
+        <!-- MAIN CONTENT AREA -->
         <main class="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
             <!-- CARDS STATS -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -160,10 +160,10 @@
                             <tr>
                                 <th class="py-3 px-4">ID & Jenis</th>
                                 <th class="py-3 px-4">Judul Pekerjaan</th>
-                                <th class="py-3 px-4">PIC & Dept</th>
+                                <th class="py-3 px-4">Pemberi ➔ PIC Target</th>
+                                <th class="py-3 px-4">Dept Tujuan</th>
                                 <th class="py-3 px-4">Target Deadline</th>
                                 <th class="py-3 px-4">Status Approval</th>
-                                <th class="py-3 px-4">Ceklis Atasan</th>
                                 <th class="py-3 px-4 text-right">Aksi</th>
                             </tr>
                         </thead>
@@ -176,17 +176,41 @@
         </main>
     </div>
 
-    <!-- MODAL INPUT TUGAS -->
+    <!-- MODAL INPUT TUGAS (DENGAN DEPT TUJUAN DAN PIC TARGET) -->
     <div id="modal-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-md p-6 space-y-4">
-            <h3 class="font-bold text-sm text-white flex items-center gap-2">
-                <i data-lucide="plus-circle" class="w-4 h-4 text-brandPurple"></i> Form Input Tugas / Project
-            </h3>
+        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b border-borderDark">
+                <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-brandPurple"></i> Form Input Tugas / Project
+                </h3>
+                <button onclick="document.getElementById('modal-task').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+
             <form onsubmit="handleSaveTask(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-gray-300 mb-1">Judul Pekerjaan</label>
-                    <input type="text" id="task-title" required class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                    <input type="text" id="task-title" required placeholder="Contoh: Renovasi Gedung / Audit Operasional" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
                 </div>
+
+                <!-- DEPARTEMEN TUJUAN DAN PIC TARGET -->
+                <div class="grid grid-cols-2 gap-2 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
+                    <div>
+                        <label class="block font-semibold text-indigo-400 mb-1">Tugaskan Ke Dept:</label>
+                        <select id="task-dept-target" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none">
+                            <option value="Klinik">Klinik</option>
+                            <option value="HR">Human Resources (HR)</option>
+                            <option value="GA">General Affairs (GA)</option>
+                            <option value="IT">Information Tech (IT)</option>
+                            <option value="Finance">Finance & Accounting</option>
+                            <option value="Laboratorium">Laboratorium</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-indigo-400 mb-1">PIC Penerima (NIK / Nama):</label>
+                        <input type="text" id="task-pic-target" required placeholder="Contoh: 220200 (Budi)" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none">
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block font-semibold text-gray-300 mb-1">Jenis Tugas</label>
@@ -199,12 +223,15 @@
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
                         <select id="task-frekuensi" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
                             <option value="Harian">Harian</option>
+                            <option value="2 Harian">2 Harian</option>
+                            <option value="3 Harian">3 Harian</option>
                             <option value="Mingguan">Mingguan</option>
                             <option value="Bulanan">Bulanan</option>
                             <option value="Tahunan">Tahunan</option>
                         </select>
                     </div>
                 </div>
+
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block font-semibold text-gray-300 mb-1">Tanggal Mulai</label>
@@ -215,6 +242,7 @@
                         <input type="date" id="task-end" required class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
                     </div>
                 </div>
+
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block font-semibold text-rose-400 mb-1">Late Warning (Hari)</label>
@@ -225,13 +253,15 @@
                         <input type="number" id="task-early" value="3" min="0" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
                     </div>
                 </div>
+
                 <div>
-                    <label class="block font-semibold text-gray-300 mb-1">Catatan Bebas / Instruksi</label>
-                    <textarea id="task-catatan" rows="2" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none"></textarea>
+                    <label class="block font-semibold text-gray-300 mb-1">Catatan Bebas / Instruksi Khusus</label>
+                    <textarea id="task-catatan" rows="2" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none" placeholder="Tuliskan instruksi pekerjaan secara detail..."></textarea>
                 </div>
+
                 <div class="flex justify-end gap-2 pt-2 border-t border-borderDark">
                     <button type="button" onclick="document.getElementById('modal-task').classList.add('hidden')" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-brandPurple text-white rounded-xl font-bold">Simpan & Sinkronkan</button>
+                    <button type="submit" class="px-4 py-2 bg-brandPurple text-white rounded-xl font-bold shadow">Simpan & Berikan Tugas</button>
                 </div>
             </form>
         </div>
@@ -247,11 +277,18 @@
             const nik = document.getElementById('login-nik').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
             const errBox = document.getElementById('login-error');
-            const btnSubmit = document.getElementById('btn-login-submit');
+            const btn = document.getElementById('btn-login');
 
             errBox.classList.add('hidden');
-            btnSubmit.disabled = true;
-            btnSubmit.innerHTML = '<span>Memverifikasi GSheet...</span>';
+
+            if (!GAS_URL || GAS_URL.includes('PASTE_WEB_APP_URL_GAS_DI_SINI')) {
+                document.getElementById('login-error-msg').innerText = 'ERROR: GAS_URL belum diisi di index.html!';
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'MEMVERIFIKASI KE GSHEET...';
 
             try {
                 const response = await fetch(GAS_URL, {
@@ -262,29 +299,26 @@
 
                 if (res.status === 'success') {
                     currentUser = res.user;
-                    
                     document.getElementById('login-view').classList.add('hidden');
                     document.getElementById('dashboard-view').classList.remove('hidden');
                     document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Dept: ${currentUser.dept} | Role: ${currentUser.role}`;
 
-                    // Tampilkan Dropdown Filter Lintas Dept jika Direksi / Super Admin
-                    if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'DIREKSI' || currentUser.level === 'Dewan Direksi') {
-                        document.getElementById('direksi-dept-filter-wrapper').classList.remove('hidden');
-                    }
+                    // Set default dept target pada form input tugas ke dept pengguna saat ini
+                    document.getElementById('task-dept-target').value = currentUser.dept || 'Klinik';
 
                     lucide.createIcons();
                     fetchDataFromGAS();
                 } else {
-                    document.getElementById('login-error-msg').innerText = res.message || 'NIK atau Password Salah!';
+                    document.getElementById('login-error-msg').innerText = res.message || 'NIK atau Password tidak terdaftar!';
                     errBox.classList.remove('hidden');
                 }
             } catch (err) {
-                console.error('Error Login:', err);
-                document.getElementById('login-error-msg').innerText = 'Gagal terhubung ke Google Apps Script! Periksa GAS_URL.';
+                console.error('Login Error:', err);
+                document.getElementById('login-error-msg').innerText = 'Gagal terhubung ke GSheet!';
                 errBox.classList.remove('hidden');
             } finally {
-                btnSubmit.disabled = false;
-                btnSubmit.innerHTML = '<span>Masuk Secure Portal</span>';
+                btn.disabled = false;
+                btn.innerText = 'MASUK SECURE PORTAL';
             }
         }
 
@@ -333,19 +367,18 @@
                 jenisTugas: document.getElementById('task-jenis').value,
                 judul: document.getElementById('task-title').value,
                 frekuensi: document.getElementById('task-frekuensi').value,
-                deptTarget: currentUser.dept,
+                deptTarget: document.getElementById('task-dept-target').value,
+                picTarget: document.getElementById('task-pic-target').value,
                 tanggalMulai: document.getElementById('task-start').value,
                 tanggalTarget: document.getElementById('task-end').value,
                 lateWarningHari: document.getElementById('task-late').value,
                 earlyWarningHari: document.getElementById('task-early').value,
                 catatanBebas: document.getElementById('task-catatan').value,
-                status: 'Staf (Input)',
+                status: 'Menunggu Verif',
                 progress: 0,
                 picNik: currentUser.nik,
                 picNama: currentUser.nama,
-                dept: currentUser.dept,
-                checkedBySuperior: false,
-                isActive: true
+                dept: currentUser.dept
             };
 
             tasksData.push(newTask);
@@ -360,22 +393,25 @@
 
         function renderDashboard() {
             let viewable = tasksData;
-            const filterDept = document.getElementById('direksi-dept-filter')?.value || 'ALL';
+            const filterDept = document.getElementById('filter-dept-header')?.value || 'ALL';
 
-            // Filter Hierarki Akses
+            // Filter Berdasarkan Header Filter Dept
+            if (filterDept !== 'ALL') {
+                viewable = tasksData.filter(t => (t.deptTarget || t.Dept || t.dept) === filterDept);
+            }
+
+            // Filter Hierarki Hak Akses
             if (currentUser.role === 'STAF' || currentUser.level === 'Staf') {
-                viewable = tasksData.filter(t => String(t.picNik) === String(currentUser.nik));
+                viewable = viewable.filter(t => String(t.picTarget || t.picNik) === String(currentUser.nik) || String(t.picNik) === String(currentUser.nik));
             } else if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'DIREKSI' && currentUser.level !== 'Dewan Direksi') {
-                viewable = tasksData.filter(t => t.dept === currentUser.dept);
-            } else if (filterDept !== 'ALL') {
-                viewable = tasksData.filter(t => t.dept === filterDept);
+                viewable = viewable.filter(t => (t.deptTarget || t.dept) === currentUser.dept || t.dept === currentUser.dept);
             }
 
             document.getElementById('stat-total').innerText = viewable.length;
 
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">Belum ada data tugas untuk ditampilkan.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">Belum ada data tugas untuk ditampilkan pada filter ini.</td></tr>`;
                 return;
             }
 
@@ -383,16 +419,18 @@
                 <tr class="hover:bg-cardBg/50 transition">
                     <td class="py-3 px-4 font-mono font-bold text-white">${t.TaskID || t.id}<br><span class="text-[10px] text-brandPurple">${t.JenisTugas || t.jenisTugas}</span></td>
                     <td class="py-3 px-4 font-semibold text-white">${t.Judul || t.judul}</td>
-                    <td class="py-3 px-4">${t.PIC_Nama || t.picNama}<br><span class="text-[10px] text-gray-400">${t.Dept || t.dept}</span></td>
+                    <td class="py-3 px-4"><span class="text-gray-400">${t.PIC_Nama || t.picNama}</span> ➔ <span class="text-indigo-300 font-bold">${t.picTarget || t.PIC_NIK || '-'}</span></td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-indigo-300">${t.deptTarget || t.Dept || t.dept}</span></td>
                     <td class="py-3 px-4 font-mono text-amber-400">${t.TanggalTarget || t.tanggalTarget}</td>
                     <td class="py-3 px-4"><span class="px-2.5 py-1 bg-cardBg border border-borderDark rounded-full text-[10px] font-bold text-indigo-300">${t.Status || t.status}</span></td>
-                    <td class="py-3 px-4">${(t.CheckedBySuperior === 'YA' || t.checkedBySuperior) ? '<span class="text-emerald-400 font-bold">✓ Cek Atasan</span>' : '<span class="text-gray-500 font-bold">-</span>'}</td>
-                    <td class="py-3 px-4 text-right"><span class="text-[10px] text-gray-500 font-mono">Synced</span></td>
+                    <td class="py-3 px-4 text-right"><span class="text-[10px] text-emerald-400 font-mono font-bold">Aktif</span></td>
                 </tr>
             `).join('');
 
             lucide.createIcons();
         }
+
+        document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
     </script>
 </body>
 </html>
