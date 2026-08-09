@@ -88,10 +88,25 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- NOTIFIKASI LONCENG BERWARNA -->
-                <div class="relative cursor-pointer bg-cardBg border border-borderDark p-2 rounded-xl text-amber-400 hover:text-amber-300 transition" title="Notifikasi Tugas">
-                    <i data-lucide="bell" class="w-4 h-4"></i>
-                    <span id="notif-badge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">0</span>
+                <!-- NOTIFIKASI LONCENG INTERAKTIF DENGAN DROPDOWN -->
+                <div class="relative">
+                    <button onclick="toggleNotifDropdown(event)" class="relative bg-cardBg border border-borderDark p-2 rounded-xl text-amber-400 hover:text-amber-300 transition flex items-center justify-center" title="Notifikasi Tugas">
+                        <i data-lucide="bell" class="w-4 h-4"></i>
+                        <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">0</span>
+                    </button>
+
+                    <!-- DROPDOWN NOTIFIKASI -->
+                    <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-panelBg border border-borderDark rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div class="p-3 border-b border-borderDark flex justify-between items-center bg-cardBg/80">
+                            <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+                                <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-400"></i> Notifikasi Tugas
+                            </h4>
+                            <span id="notif-unread-count" class="text-[10px] text-indigo-400 font-bold">0 Belum Dibaca</span>
+                        </div>
+                        <div id="notif-list" class="max-h-64 overflow-y-auto divide-y divide-borderDark/40">
+                            <!-- LIST NOTIFIKASI DI-RENDER DINAMIS -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- FILTER DIVISI HEADER -->
@@ -99,17 +114,6 @@
                     <i data-lucide="filter" class="w-3.5 h-3.5 text-brandPurple"></i>
                     <span class="text-[10px] font-bold text-gray-400 uppercase">Divisi:</span>
                     <select id="filter-divisi-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
-                    </select>
-                </div>
-
-                <!-- FILTER JENIS TUGAS HEADER (PROJECT / RUTIN) -->
-                <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
-                    <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase">Jenis:</span>
-                    <select id="filter-jenis-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
-                        <option value="ALL" class="bg-cardBg">Semua Jenis</option>
-                        <option value="Project" class="bg-cardBg">Project</option>
-                        <option value="Rutin" class="bg-cardBg">Rutinan</option>
                     </select>
                 </div>
 
@@ -147,14 +151,30 @@
                 </div>
             </div>
 
+            <!-- BOKS DAFTAR TUGAS DENGAN FILTER JENIS TUGAS DI SEBELAH REFRESH DATA TUGAS -->
             <div class="bg-panelBg border border-borderDark rounded-2xl p-5 space-y-4">
                 <div class="flex justify-between items-center border-b border-borderDark pb-3">
                     <h3 class="text-sm font-bold text-white flex items-center gap-2">
                         <i data-lucide="list-todo" class="w-4 h-4 text-brandPurple"></i> Daftar Tugas & Approval Berjenjang
                     </h3>
-                    <button onclick="fetchDataFromGAS()" class="text-xs bg-cardBg px-3 py-1.5 rounded-xl border border-borderDark hover:bg-borderDark text-gray-300 flex items-center gap-1.5 font-bold">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Data GSheet
-                    </button>
+
+                    <div class="flex items-center gap-3">
+                        <!-- FILTER JENIS TUGAS DITAMPILKAN DI SEBELAH TOMBOL REFRESH -->
+                        <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
+                            <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">Jenis:</span>
+                            <select id="filter-jenis-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
+                                <option value="ALL" class="bg-cardBg">Semua Jenis</option>
+                                <option value="Project" class="bg-cardBg">Project</option>
+                                <option value="Rutin" class="bg-cardBg">Rutinan</option>
+                            </select>
+                        </div>
+
+                        <!-- REFRESH DATA TUGAS -->
+                        <button onclick="fetchDataFromGAS()" class="text-xs bg-cardBg px-3.5 py-1.5 rounded-xl border border-borderDark hover:bg-borderDark text-gray-300 flex items-center gap-1.5 font-bold transition">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Data Tugas
+                        </button>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -316,6 +336,7 @@
         let masterUsers = [];
         let masterHirearki = [];
         let tasksData = [];
+        let readNotifications = JSON.parse(localStorage.getItem('read_notifs') || '[]');
 
         async function handleLogin(e) {
             e.preventDefault();
@@ -556,15 +577,15 @@
             updateDeptOptions();
         }
 
-        // REVISI TOTAL PENYIMPANAN DATA TUGAS DENGAN DATA PEMBERI KOPERATIF (DPS / MFT DLL)
+        // TAMBAH TUGAS (NAMA PEMBERI & DIVISI TARGET TERSIMPAN LENGKAP UTUH)
         async function handleSaveTask(e) {
             e.preventDefault();
             const selectedPic = document.getElementById('task-pic-target').value;
+            const targetDivisiVal = document.getElementById('task-divisi-target').value;
             const targetDeptVal = document.getElementById('task-dept-target').value;
             const jenisTugasVal = document.getElementById('task-jenis').value;
             const frekuensiVal = jenisTugasVal === 'Rutin' ? document.getElementById('task-frekuensi').value : '-';
             
-            // Nama & NIK Penerima yang dipilih
             const picNamaVal = selectedPic.split(' - ')[0] || selectedPic;
             const picNikVal = selectedPic.split(' - ')[1] ? selectedPic.split(' - ')[1].split(' ')[0] : '';
 
@@ -573,7 +594,8 @@
                 jenisTugas: jenisTugasVal,
                 judul: document.getElementById('task-title').value,
                 frekuensi: frekuensiVal,
-                deptTarget: targetDeptVal, // DEPT TUJUAN YANG DIPILIH
+                divisiTarget: targetDivisiVal, // DIVISI UTAMA
+                deptTarget: targetDeptVal, // DEPT TERTUJU
                 tanggalMulai: document.getElementById('task-start').value,
                 tanggalTarget: document.getElementById('task-end').value,
                 lateWarningHari: document.getElementById('task-late').value,
@@ -583,8 +605,8 @@
                 progress: 0,
                 picNik: picNikVal,
                 picNama: picNamaVal,
-                pemberiNik: currentUser.nik, // DPS / MFT ASLI
-                pemberiNama: currentUser.nama // DPS / MFT ASLI
+                pemberiNik: currentUser.nik, // DPS / MFT (PEMBERI ASLI)
+                pemberiNama: currentUser.nama // DPS / MFT (PEMBERI ASLI)
             };
 
             tasksData.push(newTask);
@@ -603,13 +625,43 @@
             });
         }
 
-        // RENDER DASHBOARD TAMPILAN PRESISI & FILTERING GABUNGAN
+        // POP-UP DROPDOWN NOTIFIKASI LONCENG INTERAKTIF
+        function toggleNotifDropdown(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('notif-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('notif-dropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        function markNotifRead(taskId) {
+            if (!readNotifications.includes(taskId)) {
+                readNotifications.push(taskId);
+                localStorage.setItem('read_notifs', JSON.stringify(readNotifications));
+            }
+            renderDashboard();
+
+            // HIGHLIGHT & SCROLL KE BARIS TUGAS
+            const row = document.getElementById('row-' + taskId);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.add('bg-indigo-900/50');
+                setTimeout(() => row.classList.remove('bg-indigo-900/50'), 2500);
+            }
+            document.getElementById('notif-dropdown').classList.add('hidden');
+        }
+
+        // RENDER DASHBOARD TAMPILAN PRESISI SESUAI 6 POIN INSTRUKSI
         function renderDashboard() {
             let viewable = tasksData;
             const filterDivisi = document.getElementById('filter-divisi-header')?.value || 'ALL';
             const filterJenis = document.getElementById('filter-jenis-header')?.value || 'ALL';
 
-            // 1. FILTER BERDASARKAN USER LOGIN (Penerima ATAU Pemberi ATAU Dewan Direksi/Super Admin)
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
 
             if (!isSuperAdminOrDireksi) {
@@ -622,19 +674,53 @@
                 );
             }
 
-            // 2. FILTER DIVISI
             if (filterDivisi !== 'ALL') {
-                viewable = viewable.filter(t => (t.DeptTarget || t.deptTarget || t.Dept || t.dept) === filterDivisi || t.divisi === filterDivisi);
+                viewable = viewable.filter(t => (t.DeptTarget || t.deptTarget || t.Dept || t.dept) === filterDivisi || t.divisi === filterDivisi || (t.divisiTarget === filterDivisi));
             }
 
-            // 3. FILTER JENIS TUGAS (PROJECT VS RUTIN)
             if (filterJenis !== 'ALL') {
                 viewable = viewable.filter(t => String(t.JenisTugas || t.jenisTugas).toLowerCase().includes(filterJenis.toLowerCase()));
             }
 
-            // UPDATE STATISTIK CARDS & BADGE NOTIFIKASI
+            // HITUNG NOTIFIKASI KHUSUS PENERIMA TUGAS (DCH / STAFF LAIN, DPS BEBAS)
+            const myReceivedTasks = tasksData.filter(t => String(t.PIC_NIK || t.picNik).trim() === String(currentUser.nik).trim());
+            const unreadTasks = myReceivedTasks.filter(t => !readNotifications.includes(t.TaskID || t.id));
+
+            const badge = document.getElementById('notif-badge');
+            const unreadCountElem = document.getElementById('notif-unread-count');
+            const notifListElem = document.getElementById('notif-list');
+
+            if (myReceivedTasks.length > 0 && unreadTasks.length > 0) {
+                badge.innerText = unreadTasks.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            unreadCountElem.innerText = `${unreadTasks.length} Belum Dibaca`;
+
+            if (myReceivedTasks.length === 0) {
+                notifListElem.innerHTML = `<div class="p-4 text-center text-xs text-gray-500">Tidak ada notifikasi tugas baru.</div>`;
+            } else {
+                notifListElem.innerHTML = myReceivedTasks.map(t => {
+                    const taskId = t.TaskID || t.id;
+                    const isUnread = !readNotifications.includes(taskId);
+                    const pemberi = t.PemberiNama || t.pemberiNama || t.PemberiNIK || t.pemberiNik || 'Atasan';
+
+                    return `
+                        <div onclick="markNotifRead('${taskId}')" class="p-3 hover:bg-cardBg/80 cursor-pointer transition ${isUnread ? 'bg-indigo-950/40 border-l-2 border-brandPurple' : 'opacity-70'}">
+                            <p class="text-xs ${isUnread ? 'font-extrabold text-white' : 'font-normal text-gray-300'}">
+                                ${isUnread ? '🔴' : '⚪'} Tugas baru dari <span class="text-indigo-400 font-bold">${pemberi}</span>
+                            </p>
+                            <p class="text-[11px] text-gray-300 mt-0.5 ${isUnread ? 'font-bold' : ''}">${t.Judul || t.judul}</p>
+                            <span class="text-[9px] text-gray-500 font-mono">${t.TanggalTarget || t.tanggalTarget}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // STATISTIK ACTIVE TASKS
             document.getElementById('stat-total').innerText = viewable.length;
-            document.getElementById('notif-badge').innerText = viewable.length;
 
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
@@ -650,18 +736,20 @@
                 
                 const judul = t.Judul || t.judul;
                 
-                // PEMBERI HASIL REVISI: DPS / MFT (PEMBERI) ➔ DCH (PENERIMA)
+                // NAMA ASLI PEMBERI DARI DATABASE (DPS / MFT DENGAN NAMA ASLI)
                 const pemberi = t.PemberiNama || t.pemberiNama || t.PemberiNIK || t.pemberiNik || 'Atasan';
                 const penerima = t.PIC_Nama || t.picNama || t.PIC_NIK || t.picNik;
                 
-                // DEPT TARGET HASIL REVISI (IT / SDM DLL BUKAN DIREKSI)
-                const deptTujuan = t.DeptTarget || t.deptTarget || t.Dept || t.dept;
-                
+                // LENGKAP: FORMAT "DIVISI UTAMA / DEPT TUJUAN" (Contoh: "SDM, Umum, & TI / SDM")
+                const targetDiv = t.divisiTarget || t.DivisiTarget || t.divisi || 'SDM, Umum, & TI';
+                const targetDept = t.DeptTarget || t.deptTarget || t.Dept || t.dept;
+                const divisiDeptFormatted = `${targetDiv} / ${targetDept}`;
+
                 const deadline = t.TanggalTarget || t.tanggalTarget || '-';
                 const status = t.Status || t.status || 'Menunggu Verif';
 
                 return `
-                    <tr class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
+                    <tr id="row-${id}" class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
                         <td class="py-3 px-4 font-mono font-bold text-white">
                             ${id}<br>
                             <span class="text-[10px] text-brandPurple font-semibold">${jenis} ${freqText}</span>
@@ -671,7 +759,7 @@
                             <span class="text-indigo-300 font-bold">${pemberi}</span> ➔ <span class="text-emerald-400 font-bold">${penerima}</span>
                         </td>
                         <td class="py-3 px-4">
-                            <span class="px-2 py-1 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-amber-300">${deptTujuan}</span>
+                            <span class="px-2 py-1 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-amber-300">${divisiDeptFormatted}</span>
                         </td>
                         <td class="py-3 px-4 font-mono text-amber-400">${deadline}</td>
                         <td class="py-3 px-4">
