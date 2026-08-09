@@ -21,7 +21,7 @@
 <body class="bg-darkBg text-gray-200 h-full font-sans flex flex-col antialiased">
 
     <script>
-        // ⚠️ PASTE URL HASIL DEPLOY GOOGLE APPS SCRIPT YANG MULIA DI SINI:
+        // URL WEB APP GAS YANG MULIA SUDAH TERTANAM PERMANEN DI SINI:
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxMz_IC3RuM9jxrAsdJ4f8a-qtZ1DZB0zzp-VLh1XkNzaZEkRVHLqS96gU1PguT7m3L/exec';
     </script>
 
@@ -89,12 +89,10 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- DROPDOWN FILTER BERANDA DIGANTI DENGAN FILTER DIVISI -->
                 <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
                     <i data-lucide="filter" class="w-3.5 h-3.5 text-brandPurple"></i>
                     <span class="text-[10px] font-bold text-gray-400 uppercase">Filter Divisi:</span>
                     <select id="filter-divisi-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
-                        <!-- Dynamic Options Sesuai Hak Akses -->
                     </select>
                 </div>
 
@@ -156,7 +154,6 @@
                             </tr>
                         </thead>
                         <tbody id="tasks-tbody" class="divide-y divide-borderDark">
-                            <!-- Rendered Dynamically -->
                         </tbody>
                     </table>
                 </div>
@@ -164,7 +161,7 @@
         </main>
     </div>
 
-    <!-- MODAL 1: INPUT TUGAS -->
+    <!-- MODAL INPUT TUGAS (CASCADING FILTER DIVISI ➔ DEPARTEMEN ➔ PIC) -->
     <div id="modal-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -180,17 +177,22 @@
                     <input type="text" id="task-title" required placeholder="Contoh: Renovasi Gedung / Laporan Bulanan" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
-                    <div>
-                        <label class="block font-semibold text-indigo-400 mb-1">Tugaskan Ke Div / Dept:</label>
-                        <select id="task-dept-target" onchange="updatePICOptions()" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
-                            <!-- Dynamic Options From Master Hirearki Jabatan -->
-                        </select>
+                <div class="space-y-2 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-semibold text-indigo-400 mb-1">1. Pilih Divisi Target:</label>
+                            <select id="task-divisi-target" onchange="updateDeptOptions()" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-indigo-400 mb-1">2. Pilih Dept Target:</label>
+                            <select id="task-dept-target" onchange="updatePICOptions()" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
+                            </select>
+                        </div>
                     </div>
                     <div>
-                        <label class="block font-semibold text-indigo-400 mb-1">PIC Penerima (Nama - NIK):</label>
+                        <label class="block font-semibold text-emerald-400 mb-1">3. PIC Penerima (Nama - NIK & Jabatan):</label>
                         <select id="task-pic-target" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
-                            <!-- Dynamic Options Hierarki Validated -->
                         </select>
                     </div>
                 </div>
@@ -251,7 +253,7 @@
         </div>
     </div>
 
-    <!-- MODAL 2: UBAH PASSWORD -->
+    <!-- MODAL UBAH PASSWORD -->
     <div id="modal-changepass" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-md p-6 space-y-4">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -297,14 +299,8 @@
 
             errBox.classList.add('hidden');
 
-            if (!GAS_URL || GAS_URL.includes('PASTE_WEB_APP_URL_GAS_DI_SINI')) {
-                document.getElementById('login-error-msg').innerText = 'ERROR: GAS_URL belum diisi!';
-                errBox.classList.remove('hidden');
-                return;
-            }
-
             btn.disabled = true;
-            btn.innerText = 'MEMVERIFIKASI...';
+            btn.innerText = 'MEMVERIFIKASI...'; // TEKS SINGKAT SESUAI INSTRUKSI
 
             try {
                 const response = await fetch(GAS_URL, {
@@ -341,15 +337,12 @@
         }
 
         function setupMasterDataUI() {
-            // 1. Ekstrak seluruh Divisi unik dari Master Hirearki Jabatan
-            const divisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
+            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
 
+            const divisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
             const headerDivisiSelect = document.getElementById('filter-divisi-header');
             headerDivisiSelect.innerHTML = '';
 
-            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
-
-            // 2. FILTER BERANDA DIVISI KETAT SESUAI HAK AKSES
             if (isSuperAdminOrDireksi) {
                 headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
                 divisiList.forEach(d => {
@@ -357,40 +350,49 @@
                 });
                 headerDivisiSelect.disabled = false;
             } else {
-                // USER BIASA (DNI, AHW, DCH, DLL) DILOCK HANYA PADA DIVISINYA SENDIRI!
                 headerDivisiSelect.innerHTML = `<option value="${currentUser.divisi}" class="bg-cardBg">${currentUser.divisi}</option>`;
-                headerDivisiSelect.disabled = true; // TERKUNCI MATI!
+                headerDivisiSelect.disabled = true;
             }
 
-            // 3. Form Target Dept Input Task Sesuai Hierarki
+            const taskDivisiSelect = document.getElementById('task-divisi-target');
+            taskDivisiSelect.innerHTML = '';
+
+            if (isSuperAdminOrDireksi) {
+                divisiList.forEach(d => {
+                    taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                });
+                taskDivisiSelect.disabled = false;
+            } else {
+                taskDivisiSelect.innerHTML = `<option value="${currentUser.divisi}">${currentUser.divisi}</option>`;
+                taskDivisiSelect.disabled = true;
+            }
+
+            updateDeptOptions();
+        }
+
+        function updateDeptOptions() {
+            const selectedDivisi = document.getElementById('task-divisi-target').value;
             const taskDeptSelect = document.getElementById('task-dept-target');
             taskDeptSelect.innerHTML = '';
 
-            const deptsFromHirearki = [...new Set(masterHirearki.map(h => String(h.Departemen || h.departemen || '').trim()).filter(Boolean))];
+            const deptsInDivisi = [...new Set(
+                masterHirearki
+                    .filter(h => String(h.Divisi || h.divisi || '').trim() === selectedDivisi)
+                    .map(h => String(h.Departemen || h.departemen || '').trim())
+                    .filter(Boolean)
+            )];
 
-            if (isSuperAdminOrDireksi) {
-                deptsFromHirearki.forEach(d => {
+            if (deptsInDivisi.length === 0) {
+                taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
+            } else {
+                deptsInDivisi.forEach(d => {
                     taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
                 });
-                taskDeptSelect.disabled = false;
-            } else {
-                // Tampilkan departemen yang berada di dalam Divisi pengguna
-                const userDeptList = [...new Set(masterHirearki.filter(h => String(h.Divisi || h.divisi || '').trim() === currentUser.divisi).map(h => String(h.Departemen || h.departemen || '').trim()))];
-                
-                if (userDeptList.length > 0) {
-                    userDeptList.forEach(d => {
-                        taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
-                    });
-                } else {
-                    taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
-                }
-                taskDeptSelect.disabled = false;
             }
 
             updatePICOptions();
         }
 
-        // HIERARKI PENUGASAN PRESISI (BACA SHEET MASTER HIREARKI JABATAN)
         function updatePICOptions() {
             const selectedDept = document.getElementById('task-dept-target').value;
             const picSelect = document.getElementById('task-pic-target');
@@ -411,23 +413,20 @@
 
             const currentUserRank = levelRank[currentUser.level] || 2;
 
-            // Filter pegawai yang berada di dalam lingkup yang tepat
             const filteredPegawai = masterUsers.filter(u => {
-                if (String(u.nik) === String(currentUser.nik)) return false; // Jangan tampilkan diri sendiri
+                if (String(u.nik) === String(currentUser.nik)) return false;
 
-                // Poin Kunci DCH: Pencocokan Pintar Divisi / Departemen SDM, Umum, & TI
-                const matchDept = (u.dept === selectedDept) || (u.divisi === currentUser.divisi);
-                if (!matchDept && !isSuperAdminOrDireksi) return false;
+                const matchDept = String(u.dept).trim() === String(selectedDept).trim();
+                if (!matchDept) return false;
 
                 if (isSuperAdminOrDireksi) return true;
 
-                // MENCEGAH MENUGASKAN ATASAN (MISAL DNI TIDAK BISA MENUGASKAN AHW):
                 const targetUserRank = levelRank[u.level] || 1;
                 return targetUserRank <= currentUserRank;
             });
 
             if (filteredPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada bawahan valid di dept/divisi ini</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada pegawai di dept ${selectedDept}</option>`;
                 return;
             }
 
@@ -523,7 +522,7 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('task-start').value = today;
             document.getElementById('task-end').value = today;
-            updatePICOptions();
+            updateDeptOptions();
         }
 
         async function handleSaveTask(e) {
@@ -575,7 +574,6 @@
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
 
             if (!isSuperAdminOrDireksi) {
-                // USER BIASA HANYA BISA LIHAT TUGAS DI LINGKUP DIVISINYA
                 viewable = viewable.filter(t => (t.deptTarget || t.Dept || t.dept) === currentUser.dept || t.divisi === currentUser.divisi);
             }
 
