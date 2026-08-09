@@ -21,6 +21,7 @@
 <body class="bg-darkBg text-gray-200 h-full font-sans flex flex-col antialiased">
 
     <script>
+        // URL WEB APP GAS PERMANEN MILIK YANG MULIA
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxMz_IC3RuM9jxrAsdJ4f8a-qtZ1DZB0zzp-VLh1XkNzaZEkRVHLqS96gU1PguT7m3L/exec';
     </script>
 
@@ -104,7 +105,6 @@
                             <span id="notif-unread-count" class="text-[10px] text-indigo-400 font-bold">0 Belum Dibaca</span>
                         </div>
                         <div id="notif-list" class="max-h-64 overflow-y-auto divide-y divide-borderDark/40">
-                            <!-- LIST NOTIFIKASI DI-RENDER DINAMIS -->
                         </div>
                     </div>
                 </div>
@@ -132,35 +132,44 @@
         </header>
 
         <main class="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-panelBg border border-borderDark p-4 rounded-2xl">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Tugas Active</p>
-                    <h3 id="stat-total" class="text-2xl font-bold text-white mt-1">0</h3>
+            <!-- 5. BOKS DASHBOARD BESAR INDIKATOR TUGAS LENGKAP -->
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <div class="bg-panelBg border border-borderDark p-3.5 rounded-2xl">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Tugas Aktif</p>
+                    <h3 id="stat-total" class="text-xl font-bold text-white mt-1">0</h3>
                 </div>
-                <div class="bg-panelBg border border-amber-500/30 bg-amber-950/10 p-4 rounded-2xl">
-                    <p class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Early Warning Radar</p>
-                    <h3 id="stat-warning" class="text-2xl font-bold text-amber-400 mt-1">0</h3>
+                <div class="bg-panelBg border border-indigo-500/30 bg-indigo-950/10 p-3.5 rounded-2xl">
+                    <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">In Progress</p>
+                    <h3 id="stat-progress" class="text-xl font-bold text-indigo-400 mt-1">0</h3>
                 </div>
-                <div class="bg-panelBg border border-emerald-500/30 bg-emerald-950/10 p-4 rounded-2xl">
+                <div class="bg-panelBg border border-amber-500/30 bg-amber-950/10 p-3.5 rounded-2xl">
+                    <p class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Early Warning</p>
+                    <h3 id="stat-warning" class="text-xl font-bold text-amber-400 mt-1">0</h3>
+                </div>
+                <div class="bg-panelBg border border-orange-500/30 bg-orange-950/10 p-3.5 rounded-2xl">
+                    <p class="text-[10px] font-bold text-orange-400 uppercase tracking-wider">Late Warning</p>
+                    <h3 id="stat-late" class="text-xl font-bold text-orange-400 mt-1">0</h3>
+                </div>
+                <div class="bg-panelBg border border-emerald-500/30 bg-emerald-950/10 p-3.5 rounded-2xl">
                     <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Selesai / Approved</p>
-                    <h3 id="stat-done" class="text-2xl font-bold text-emerald-400 mt-1">0</h3>
+                    <h3 id="stat-done" class="text-xl font-bold text-emerald-400 mt-1">0</h3>
                 </div>
-                <div class="bg-panelBg border border-rose-500/30 bg-rose-950/10 p-4 rounded-2xl">
+                <div class="bg-panelBg border border-rose-500/30 bg-rose-950/10 p-3.5 rounded-2xl">
                     <p class="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Overdue / Terlewat</p>
-                    <h3 id="stat-overdue" class="text-2xl font-bold text-rose-400 mt-1">0</h3>
+                    <h3 id="stat-overdue" class="text-xl font-bold text-rose-400 mt-1">0</h3>
                 </div>
             </div>
 
-            <!-- BOKS DAFTAR TUGAS DENGAN FILTER JENIS TUGAS DI SEBELAH REFRESH DATA TUGAS -->
+            <!-- BOKS DAFTAR TUGAS DENGAN FILTER JENIS & FILTER STATUS -->
             <div class="bg-panelBg border border-borderDark rounded-2xl p-5 space-y-4">
                 <div class="flex justify-between items-center border-b border-borderDark pb-3">
                     <h3 class="text-sm font-bold text-white flex items-center gap-2">
                         <i data-lucide="list-todo" class="w-4 h-4 text-brandPurple"></i> Daftar Tugas & Approval Berjenjang
                     </h3>
 
-                    <div class="flex items-center gap-3">
-                        <!-- FILTER JENIS TUGAS DITAMPILKAN DI SEBELAH TOMBOL REFRESH -->
-                        <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
+                    <div class="flex items-center gap-2">
+                        <!-- 4. FILTER JENIS TUGAS -->
+                        <div class="flex items-center gap-1.5 bg-cardBg border border-borderDark rounded-xl px-2.5 py-1.5">
                             <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
                             <span class="text-[10px] font-bold text-gray-400 uppercase">Jenis:</span>
                             <select id="filter-jenis-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
@@ -170,8 +179,22 @@
                             </select>
                         </div>
 
+                        <!-- 4. FILTER STATUS TUGAS -->
+                        <div class="flex items-center gap-1.5 bg-cardBg border border-borderDark rounded-xl px-2.5 py-1.5">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">Status:</span>
+                            <select id="filter-status-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
+                                <option value="ALL" class="bg-cardBg">Semua Status</option>
+                                <option value="In Progress" class="bg-cardBg">In Progress / Verif</option>
+                                <option value="Early Warning" class="bg-cardBg">Early Warning</option>
+                                <option value="Late Warning" class="bg-cardBg">Late Warning</option>
+                                <option value="Selesai" class="bg-cardBg">Selesai / Approved</option>
+                                <option value="Overdue" class="bg-cardBg">Overdue / Terlewat</option>
+                            </select>
+                        </div>
+
                         <!-- REFRESH DATA TUGAS -->
-                        <button onclick="fetchDataFromGAS()" class="text-xs bg-cardBg px-3.5 py-1.5 rounded-xl border border-borderDark hover:bg-borderDark text-gray-300 flex items-center gap-1.5 font-bold transition">
+                        <button onclick="fetchDataFromGAS()" class="text-xs bg-cardBg px-3 py-1.5 rounded-xl border border-borderDark hover:bg-borderDark text-gray-300 flex items-center gap-1.5 font-bold transition">
                             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Data Tugas
                         </button>
                     </div>
@@ -337,6 +360,16 @@
         let masterHirearki = [];
         let tasksData = [];
         let readNotifications = JSON.parse(localStorage.getItem('read_notifs') || '[]');
+
+        // UTILITY HELPER UNTUK MEMBACA PROPERTI TUGAS scr KONSISTEN (KAPITAL ATAU KECIL)
+        function getProp(obj, keys) {
+            for (let k of keys) {
+                if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
+                    return String(obj[k]).trim();
+                }
+            }
+            return '';
+        }
 
         async function handleLogin(e) {
             e.preventDefault();
@@ -577,7 +610,7 @@
             updateDeptOptions();
         }
 
-        // TAMBAH TUGAS (NAMA PEMBERI & DIVISI TARGET TERSIMPAN LENGKAP UTUH)
+        // SIMPAN TUGAS
         async function handleSaveTask(e) {
             e.preventDefault();
             const selectedPic = document.getElementById('task-pic-target').value;
@@ -594,8 +627,8 @@
                 jenisTugas: jenisTugasVal,
                 judul: document.getElementById('task-title').value,
                 frekuensi: frekuensiVal,
-                divisiTarget: targetDivisiVal, // DIVISI UTAMA
-                deptTarget: targetDeptVal, // DEPT TERTUJU
+                divisiTarget: targetDivisiVal,
+                deptTarget: targetDeptVal,
                 tanggalMulai: document.getElementById('task-start').value,
                 tanggalTarget: document.getElementById('task-end').value,
                 lateWarningHari: document.getElementById('task-late').value,
@@ -605,8 +638,8 @@
                 progress: 0,
                 picNik: picNikVal,
                 picNama: picNamaVal,
-                pemberiNik: currentUser.nik, // DPS / MFT (PEMBERI ASLI)
-                pemberiNama: currentUser.nama // DPS / MFT (PEMBERI ASLI)
+                pemberiNik: currentUser.nik,
+                pemberiNama: currentUser.nama
             };
 
             tasksData.push(newTask);
@@ -625,7 +658,6 @@
             });
         }
 
-        // POP-UP DROPDOWN NOTIFIKASI LONCENG INTERAKTIF
         function toggleNotifDropdown(e) {
             e.stopPropagation();
             const dropdown = document.getElementById('notif-dropdown');
@@ -639,52 +671,98 @@
             }
         });
 
+        // 3. DIKLIK NOTIFIKASI TUGAS: BUKA DAN RESET FILTER AGAR PASTI TAMPIL!
         function markNotifRead(taskId) {
             if (!readNotifications.includes(taskId)) {
                 readNotifications.push(taskId);
                 localStorage.setItem('read_notifs', JSON.stringify(readNotifications));
             }
+
+            // RESET FILTER AGAR TUGAS LANGSUNG KELUAR DI TABEL
+            document.getElementById('filter-divisi-header').value = 'ALL';
+            document.getElementById('filter-jenis-header').value = 'ALL';
+            document.getElementById('filter-status-header').value = 'ALL';
+
             renderDashboard();
 
-            // HIGHLIGHT & SCROLL KE BARIS TUGAS
-            const row = document.getElementById('row-' + taskId);
-            if (row) {
-                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                row.classList.add('bg-indigo-900/50');
-                setTimeout(() => row.classList.remove('bg-indigo-900/50'), 2500);
-            }
+            setTimeout(() => {
+                const row = document.getElementById('row-' + taskId);
+                if (row) {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    row.classList.add('bg-indigo-900/60');
+                    setTimeout(() => row.classList.remove('bg-indigo-900/60'), 3000);
+                }
+            }, 200);
+
             document.getElementById('notif-dropdown').classList.add('hidden');
         }
 
-        // RENDER DASHBOARD TAMPILAN PRESISI SESUAI 6 POIN INSTRUKSI
+        // RENDER DASHBOARD UTAMA
         function renderDashboard() {
             let viewable = tasksData;
+
             const filterDivisi = document.getElementById('filter-divisi-header')?.value || 'ALL';
             const filterJenis = document.getElementById('filter-jenis-header')?.value || 'ALL';
+            const filterStatus = document.getElementById('filter-status-header')?.value || 'ALL';
 
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi' || currentUser.divisi === 'Dewan Direksi');
 
+            // 1 & 2. LOGIKA HIERARKI PERIZINAN PEMBACAAN TUGAS (TIDAK AKAN HILANG LAGI)
             if (!isSuperAdminOrDireksi) {
-                const userDivs = currentUser.divisiList || [currentUser.dept];
-                viewable = viewable.filter(t => 
-                    userDivs.includes(t.DeptTarget || t.deptTarget) || 
-                    userDivs.includes(t.Dept || t.dept) || 
-                    String(t.PIC_NIK || t.picNik).trim() === String(currentUser.nik).trim() ||
-                    String(t.PemberiNIK || t.pemberiNik).trim() === String(currentUser.nik).trim()
-                );
+                const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => d.toLowerCase());
+                const userDept = currentUser.dept.toLowerCase();
+                const userNik = String(currentUser.nik).trim();
+
+                viewable = viewable.filter(t => {
+                    const picNik = getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']);
+                    const pemberiNik = getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']);
+                    const deptTarget = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']).toLowerCase();
+                    const divisiTarget = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']).toLowerCase();
+
+                    const isMine = (picNik === userNik) || (pemberiNik === userNik);
+                    const isMyDept = userDivs.includes(deptTarget) || userDivs.includes(divisiTarget) || (deptTarget === userDept);
+
+                    return isMine || isMyDept;
+                });
             }
 
+            // FILTER DIVISI DENGAN PENCATATAN LONGGAR / BEBAS KAPITAL
             if (filterDivisi !== 'ALL') {
-                viewable = viewable.filter(t => (t.DeptTarget || t.deptTarget || t.Dept || t.dept) === filterDivisi || t.divisi === filterDivisi || (t.divisiTarget === filterDivisi));
+                const fDivLower = filterDivisi.toLowerCase();
+                viewable = viewable.filter(t => {
+                    const deptTarget = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']).toLowerCase();
+                    const divisiTarget = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']).toLowerCase();
+                    
+                    return deptTarget.includes(fDivLower) || divisiTarget.includes(fDivLower) || fDivLower.includes(deptTarget);
+                });
             }
 
+            // FILTER JENIS TUGAS (PROJECT VS RUTIN)
             if (filterJenis !== 'ALL') {
-                viewable = viewable.filter(t => String(t.JenisTugas || t.jenisTugas).toLowerCase().includes(filterJenis.toLowerCase()));
+                viewable = viewable.filter(t => {
+                    const jenis = getProp(t, ['JenisTugas', 'jenisTugas']);
+                    return jenis.toLowerCase().includes(filterJenis.toLowerCase());
+                });
             }
 
-            // HITUNG NOTIFIKASI KHUSUS PENERIMA TUGAS (DCH / STAFF LAIN, DPS BEBAS)
-            const myReceivedTasks = tasksData.filter(t => String(t.PIC_NIK || t.picNik).trim() === String(currentUser.nik).trim());
-            const unreadTasks = myReceivedTasks.filter(t => !readNotifications.includes(t.TaskID || t.id));
+            // FILTER STATUS TUGAS
+            if (filterStatus !== 'ALL') {
+                viewable = viewable.filter(t => {
+                    const status = getProp(t, ['Status', 'status']);
+                    return status.toLowerCase().includes(filterStatus.toLowerCase());
+                });
+            }
+
+            // NOTIFIKASI KHUSUS PENERIMA TUGAS
+            const myReceivedTasks = tasksData.filter(t => {
+                const picNik = getProp(t, ['PIC_NIK', 'picNik']);
+                return picNik === String(currentUser.nik).trim();
+            });
+
+            const unreadTasks = myReceivedTasks.filter(t => {
+                const taskId = getProp(t, ['TaskID', 'id', 'ID']);
+                return !readNotifications.includes(taskId);
+            });
 
             const badge = document.getElementById('notif-badge');
             const unreadCountElem = document.getElementById('notif-unread-count');
@@ -703,25 +781,43 @@
                 notifListElem.innerHTML = `<div class="p-4 text-center text-xs text-gray-500">Tidak ada notifikasi tugas baru.</div>`;
             } else {
                 notifListElem.innerHTML = myReceivedTasks.map(t => {
-                    const taskId = t.TaskID || t.id;
+                    const taskId = getProp(t, ['TaskID', 'id', 'ID']);
                     const isUnread = !readNotifications.includes(taskId);
-                    const pemberi = t.PemberiNama || t.pemberiNama || t.PemberiNIK || t.pemberiNik || 'Atasan';
+                    const pemberi = getProp(t, ['PemberiNama', 'pemberiNama', 'PemberiNIK', 'pemberiNik']) || 'Atasan';
+                    const judul = getProp(t, ['Judul', 'judul']);
+                    const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']);
 
                     return `
-                        <div onclick="markNotifRead('${taskId}')" class="p-3 hover:bg-cardBg/80 cursor-pointer transition ${isUnread ? 'bg-indigo-950/40 border-l-2 border-brandPurple' : 'opacity-70'}">
-                            <p class="text-xs ${isUnread ? 'font-extrabold text-white' : 'font-normal text-gray-300'}">
-                                ${isUnread ? '🔴' : '⚪'} Tugas baru dari <span class="text-indigo-400 font-bold">${pemberi}</span>
+                        <div onclick="markNotifRead('${taskId}')" class="p-3 hover:bg-cardBg/80 cursor-pointer transition ${isUnread ? 'bg-indigo-950/50 border-l-2 border-brandPurple' : 'opacity-75'}">
+                            <p class="text-xs ${isUnread ? 'font-extrabold text-white' : 'font-medium text-gray-300'}">
+                                ${isUnread ? '🔴' : '⚪'} Tugas dari <span class="text-indigo-400 font-bold">${pemberi}</span>
                             </p>
-                            <p class="text-[11px] text-gray-300 mt-0.5 ${isUnread ? 'font-bold' : ''}">${t.Judul || t.judul}</p>
-                            <span class="text-[9px] text-gray-500 font-mono">${t.TanggalTarget || t.tanggalTarget}</span>
+                            <p class="text-[11px] text-gray-200 mt-0.5 ${isUnread ? 'font-bold' : ''}">${judul}</p>
+                            <span class="text-[9px] text-gray-500 font-mono">${deadline}</span>
                         </div>
                     `;
                 }).join('');
             }
 
-            // STATISTIK ACTIVE TASKS
-            document.getElementById('stat-total').innerText = viewable.length;
+            // 5. UPDATE STATISTIK INDIKATOR BOKS DASHBOARD BESAR (6 INDIKATOR)
+            let cProgress = 0, cWarning = 0, cLate = 0, cDone = 0, cOverdue = 0;
+            viewable.forEach(t => {
+                const st = getProp(t, ['Status', 'status']).toLowerCase();
+                if (st.includes('selesai') || st.includes('approved')) cDone++;
+                else if (st.includes('overdue') || st.includes('terlewat')) cOverdue++;
+                else if (st.includes('early')) cWarning++;
+                else if (st.includes('late')) cLate++;
+                else cProgress++;
+            });
 
+            document.getElementById('stat-total').innerText = viewable.length;
+            document.getElementById('stat-progress').innerText = cProgress;
+            document.getElementById('stat-warning').innerText = cWarning;
+            document.getElementById('stat-late').innerText = cLate;
+            document.getElementById('stat-done').innerText = cDone;
+            document.getElementById('stat-overdue').innerText = cOverdue;
+
+            // RENDER TABEL TUGAS
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">Belum ada data tugas untuk ditampilkan pada filter ini.</td></tr>`;
@@ -729,24 +825,21 @@
             }
 
             tbody.innerHTML = viewable.map(t => {
-                const id = t.TaskID || t.id;
-                const jenis = t.JenisTugas || t.jenisTugas;
-                const freq = t.Frekuensi || t.frekuensi;
+                const id = getProp(t, ['TaskID', 'id', 'ID']);
+                const jenis = getProp(t, ['JenisTugas', 'jenisTugas']);
+                const freq = getProp(t, ['Frekuensi', 'frekuensi']);
                 const freqText = (jenis === 'Rutin' && freq && freq !== '-') ? `(${freq})` : '';
+                const judul = getProp(t, ['Judul', 'judul']);
                 
-                const judul = t.Judul || t.judul;
+                const pemberi = getProp(t, ['PemberiNama', 'pemberiNama', 'PemberiNIK', 'pemberiNik']) || 'Atasan';
+                const penerima = getProp(t, ['PIC_Nama', 'picNama', 'PIC_NIK', 'picNik']);
                 
-                // NAMA ASLI PEMBERI DARI DATABASE (DPS / MFT DENGAN NAMA ASLI)
-                const pemberi = t.PemberiNama || t.pemberiNama || t.PemberiNIK || t.pemberiNik || 'Atasan';
-                const penerima = t.PIC_Nama || t.picNama || t.PIC_NIK || t.picNik;
-                
-                // LENGKAP: FORMAT "DIVISI UTAMA / DEPT TUJUAN" (Contoh: "SDM, Umum, & TI / SDM")
-                const targetDiv = t.divisiTarget || t.DivisiTarget || t.divisi || 'SDM, Umum, & TI';
-                const targetDept = t.DeptTarget || t.deptTarget || t.Dept || t.dept;
+                const targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']) || 'SDM, Umum, & TI';
+                const targetDept = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']);
                 const divisiDeptFormatted = `${targetDiv} / ${targetDept}`;
 
-                const deadline = t.TanggalTarget || t.tanggalTarget || '-';
-                const status = t.Status || t.status || 'Menunggu Verif';
+                const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']) || '-';
+                const status = getProp(t, ['Status', 'status']) || 'Menunggu Verif';
 
                 return `
                     <tr id="row-${id}" class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
