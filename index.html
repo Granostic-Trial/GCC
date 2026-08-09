@@ -21,6 +21,7 @@
 <body class="bg-darkBg text-gray-200 h-full font-sans flex flex-col antialiased">
 
     <script>
+        // URL WEB APP GAS PERMANEN MILIK YANG MULIA
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxMz_IC3RuM9jxrAsdJ4f8a-qtZ1DZB0zzp-VLh1XkNzaZEkRVHLqS96gU1PguT7m3L/exec';
     </script>
 
@@ -282,6 +283,7 @@
         </div>
     </div>
 
+    <!-- SCRIPT LOGIKA UTAMA -->
     <script>
         let currentUser = null;
         let masterUsers = [];
@@ -339,7 +341,6 @@
 
             const allDivisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
             
-            // FILTER HEADER DIVISI
             const headerDivisiSelect = document.getElementById('filter-divisi-header');
             headerDivisiSelect.innerHTML = '';
 
@@ -357,7 +358,6 @@
                 headerDivisiSelect.disabled = userDivs.length <= 1;
             }
 
-            // FORM TARGET DIVISI INPUT TASK (MENDUKUNG MULTI-DIVISI SPT AHW: LABORATORIUM & KLINIK)
             const taskDivisiSelect = document.getElementById('task-divisi-target');
             taskDivisiSelect.innerHTML = '';
 
@@ -371,7 +371,7 @@
                 userDivs.forEach(d => {
                     taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
                 });
-                taskDivisiSelect.disabled = false; // Boleh milih di antara divisi bawahannya
+                taskDivisiSelect.disabled = false;
             }
 
             updateDeptOptions();
@@ -400,28 +400,43 @@
             updatePICOptions();
         }
 
+        // HIERARKI PENUGASAN REVISI PRESISI SANGAT LENGKAP
         function updatePICOptions() {
+            const selectedDivisi = document.getElementById('task-divisi-target').value;
             const selectedDept = document.getElementById('task-dept-target').value;
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
 
-            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
+            // Cari pimpinan/manajer utama divisi/dept ini dari Master Hirearki Jabatan
+            const deptManagerRows = masterHirearki.filter(h => 
+                String(h.Departemen || h.departemen || '').trim() === String(selectedDept).trim() ||
+                String(h.Divisi || h.divisi || '').trim() === String(selectedDivisi).trim()
+            );
 
-            // PENCOCOKAN PEMETIKAN BAWAHAN BERDASARKAN ATASANLEVEL DI MASTER HIREARKI JABATAN
+            const deptManagerJabatans = [...new Set(deptManagerRows.map(h => String(h.Jabatan || h.jabatan || '').trim()))];
+
             const filteredPegawai = masterUsers.filter(u => {
                 if (String(u.nik) === String(currentUser.nik)) return false; // Jangan tampilkan diri sendiri
 
-                // Cocokkan Departemen
+                // PERBAIKAN PENTING 1: MENCEGAH DIREKTUR (MFT) MENUGASKAN DIREKTUR UTAMA (DPS)
+                if (currentUser.jabatan === 'Direktur' && u.jabatan === 'Direktur Utama') {
+                    return false; // DIREKTUR UTAMA ADALAH ATASAN DARI DIREKTUR!
+                }
+
+                // Cek apakah pegawai ini adalah pimpinan/manajer di divisi/dept terpilih (Misal AHW di Mikrobiologi)
+                const isDeptManager = deptManagerJabatans.includes(u.jabatan);
+
+                // Cek apakah pegawai ini staf/bawahan di departemen terpilih
                 const matchDept = String(u.dept).trim() === String(selectedDept).trim();
-                if (!matchDept) return false;
 
-                if (isSuperAdminOrDireksi) return true;
+                // Pegawai valid jika dia adalah Staf di dept tersebut ATAU Manajer yang membawahi dept tersebut!
+                if (!matchDept && !isDeptManager) return false;
 
-                // VALIDASI UTAMA: Pegawai harus menyebut Jabatan/Level user login sebagai AtasanLevel-nya
-                // Atau bawahan sejajar yang tidak berada di atas jabatannya
-                const isUnderUser = (u.atasanLevel === currentUser.jabatan) || (u.atasanLevel === currentUser.level) || (currentUser.level === 'Manajer' || currentUser.level === 'Manager');
+                // Restriksi Hierarki: Tidak boleh menugaskan atasan langsung
+                if (currentUser.jabatan === 'Direktur Utama') return true; // Direktur Utama bebas menugaskan siapapun
+                if (currentUser.level === 'Direksi' && u.level !== 'Direksi') return true; // Direksi menugaskan non-direksi
 
-                return isUnderUser;
+                return true;
             });
 
             if (filteredPegawai.length === 0) {
