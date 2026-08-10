@@ -429,14 +429,27 @@
         let tasksData = [];
         let readNotifications = JSON.parse(localStorage.getItem('read_notifs') || '[]');
 
-        // PENYELARASAN PEMBACAAN PROPERTI BISA DENGAN GARIS BAWAH ATAU TANPA GARIS BAWAH
+        // MENCARI PROPERTI OBJEK TANPA TERPENGARUH NAMA KOLOM / CASE-SENSITIVE
         function getProp(obj, keys) {
-            for (let k of keys) {
-                if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
-                    return String(obj[k]).trim();
+            if (!obj) return '';
+            const objKeys = Object.keys(obj);
+            for (let key of keys) {
+                const targetClean = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+                for (let actualKey of objKeys) {
+                    const actualClean = actualKey.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (actualClean === targetClean) {
+                        const val = obj[actualKey];
+                        if (val !== undefined && val !== null) {
+                            return String(val).trim();
+                        }
+                    }
                 }
             }
             return '';
+        }
+
+        function cleanString(str) {
+            return String(str || '').toLowerCase().trim();
         }
 
         async function handleLogin(e) {
@@ -563,7 +576,7 @@
             const deptManagerJabatans = [...new Set(deptManagerRows.map(h => String(h.Jabatan || h.jabatan || '').trim()))];
 
             const filteredPegawai = masterUsers.filter(u => {
-                if (String(u.nik) === String(currentUser.nik)) return false;
+                if (String(u.nik).trim() === String(currentUser.nik).trim()) return false;
 
                 if (currentUser.jabatan === 'Direktur' && u.jabatan === 'Direktur Utama') return false;
 
@@ -725,7 +738,6 @@
             });
         }
 
-        // FUNGSI MEMILIH STATUS EKSPLISIT SESUAI APPORVAL
         function selectTaskStatus(status) {
             document.getElementById('selected-status-btn').value = status;
             
@@ -760,7 +772,6 @@
             const currentStatus = getProp(t, ['Status', 'status']) || 'In Progress';
             selectTaskStatus(currentStatus);
 
-            // Buka Riwayat Dokumen
             const existingDocRaw = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
             const docListElem = document.getElementById('existing-doc-list');
             docListElem.innerHTML = '';
@@ -785,7 +796,6 @@
                 docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
             }
 
-            // Buka Riwayat Feedback & Catatan
             const feedbackHistory = getProp(t, ['Catatan', 'catatan', 'CatatanBebas']);
             const feedbackElem = document.getElementById('feedback-history-list');
             feedbackElem.innerText = feedbackHistory || 'Belum ada catatan histori.';
@@ -794,7 +804,6 @@
             document.getElementById('modal-update-task').classList.remove('hidden');
         }
 
-        // SIMPAN DOKUMEN & UPDATE PROGRESS + FEEDBACK
         async function handleSaveTaskUpdate(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-save-update');
@@ -903,19 +912,19 @@
             let pNama = getProp(t, ['PemberiNama', 'pemberiNama', 'Pemberi_Nama']);
             let pNik = getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']);
 
-            if (pNama && pNama.toLowerCase() !== 'atasan') {
+            if (pNama && cleanString(pNama) !== 'atasan') {
                 return pNama;
             }
 
             if (pNik) {
-                let foundUser = masterUsers.find(u => String(u.nik).trim() === String(pNik).trim());
+                let foundUser = masterUsers.find(u => cleanString(u.nik) === cleanString(pNik));
                 if (foundUser) return foundUser.nama;
             }
 
             return 'DPS';
         }
 
-        // LOGIKA FILTER AKSES KETAT HIERARKI
+        // LOGIKA FILTER AKSES UTAMA (PRESISI HIERARKI & PEMBERSIHAN STRING)
         function renderDashboard() {
             let viewable = tasksData;
 
@@ -923,19 +932,21 @@
             const filterJenis = document.getElementById('filter-jenis-header')?.value || 'ALL';
             const filterStatus = document.getElementById('filter-status-header')?.value || 'ALL';
 
-            const userLevel = (currentUser.level || '').toLowerCase();
-            const userNik = String(currentUser.nik).trim();
-            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || userLevel === 'direksi' || currentUser.dept === 'Dewan Direksi');
+            const userLevel = cleanString(currentUser.level);
+            const userNik = cleanString(currentUser.nik);
+            const userNama = cleanString(currentUser.nama);
+            
+            const isSuperAdminOrDireksi = (cleanString(currentUser.role).includes('admin') || userLevel.includes('direksi') || cleanString(currentUser.dept).includes('direksi'));
             const isManager = userLevel.includes('manajer') || userLevel.includes('manager');
 
-            // HAK AKSES BERDASARKAN HIERARKI DENGAN PENELUSURAN DUA NAMA HEADER (DENGAN/TANPA UNDERSCORE)
+            // FILTER HAK AKSES BERDASARKAN HIERARKI
             if (!isSuperAdminOrDireksi) {
                 if (isManager) {
-                    const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => d.toLowerCase());
+                    const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => cleanString(d));
                     viewable = viewable.filter(t => {
-                        const picNik = getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']);
-                        const pemberiNik = getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']);
-                        const deptTarget = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']).toLowerCase();
+                        const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
+                        const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
+                        const deptTarget = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
 
                         const isMine = (picNik === userNik) || (pemberiNik === userNik);
                         const isUnderMyDept = userDivs.some(ud => deptTarget.includes(ud) || ud.includes(deptTarget));
@@ -943,22 +954,27 @@
                         return isMine || isUnderMyDept;
                     });
                 } else {
+                    // UNTUK STAFFER / SUPERVISOR (MISAL FAG)
                     viewable = viewable.filter(t => {
-                        const picNik = getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']);
-                        const pemberiNik = getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']);
-                        const picNama = getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']);
+                        const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
+                        const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
+                        const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
 
-                        return (picNik === userNik) || (pemberiNik === userNik) || picNama.includes(currentUser.nama);
+                        const isPicNikMatch = (picNik !== '' && picNik === userNik);
+                        const isPemberiNikMatch = (pemberiNik !== '' && pemberiNik === userNik);
+                        const isPicNamaMatch = (picNama !== '' && (picNama.includes(userNama) || userNama.includes(picNama)));
+
+                        return isPicNikMatch || isPemberiNikMatch || isPicNamaMatch;
                     });
                 }
             }
 
             // FILTER DIVISI HEADER
             if (filterDivisi !== 'ALL') {
-                const fDivLower = filterDivisi.toLowerCase();
+                const fDivLower = cleanString(filterDivisi);
                 viewable = viewable.filter(t => {
-                    const deptTarget = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']).toLowerCase();
-                    const divisiTarget = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']).toLowerCase();
+                    const deptTarget = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
+                    const divisiTarget = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']));
                     return deptTarget.includes(fDivLower) || divisiTarget.includes(fDivLower) || fDivLower.includes(deptTarget);
                 });
             }
@@ -966,15 +982,15 @@
             // FILTER JENIS TUGAS
             if (filterJenis !== 'ALL') {
                 viewable = viewable.filter(t => {
-                    const jenis = getProp(t, ['JenisTugas', 'jenisTugas']);
-                    return jenis.toLowerCase().includes(filterJenis.toLowerCase());
+                    const jenis = cleanString(getProp(t, ['JenisTugas', 'jenisTugas']));
+                    return jenis.includes(cleanString(filterJenis));
                 });
             }
 
-            // FILTER STATUS TUGAS (MEMASUKKAN STATUS "Menunggu Verif" DAN "In Progress")
+            // FILTER STATUS TUGAS
             if (filterStatus !== 'ALL') {
                 viewable = viewable.filter(t => {
-                    const st = getProp(t, ['Status', 'status']).toUpperCase();
+                    const st = cleanString(getProp(t, ['Status', 'status'])).toUpperCase();
                     if (filterStatus === 'PROGRESS') return st.includes('PROGRESS') || st.includes('VERIF') || st === '';
                     if (filterStatus === 'SELESAI') return st.includes('SELESAI') || st.includes('APPROVED');
                     if (filterStatus === 'OVERDUE') return st.includes('OVERDUE') || st.includes('TERLEWAT');
@@ -982,11 +998,11 @@
                 });
             }
 
-            // NOTIFIKASI KHUSUS PENERIMA TUGAS
+            // NOTIFIKASI TUGAS MASUK
             const myReceivedTasks = tasksData.filter(t => {
-                const picNik = getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']);
-                const picNama = getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']);
-                return picNik === userNik || picNama.includes(currentUser.nama);
+                const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik']));
+                const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama']));
+                return (picNik !== '' && picNik === userNik) || (picNama !== '' && picNama.includes(userNama));
             });
 
             const unreadTasks = myReceivedTasks.filter(t => {
@@ -1034,7 +1050,7 @@
             const todayStr = new Date().toISOString().split('T')[0];
 
             viewable.forEach(t => {
-                const st = getProp(t, ['Status', 'status']).toUpperCase();
+                const st = cleanString(getProp(t, ['Status', 'status'])).toUpperCase();
                 const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']);
 
                 if (st.includes('SELESAI') || st.includes('APPROVED')) {
@@ -1057,7 +1073,7 @@
             document.getElementById('stat-done').innerText = cDone;
             document.getElementById('stat-overdue').innerText = cOverdue;
 
-            // RENDER TABEL TUGAS DENGAN BADGE STATUS & LAMPIRAN
+            // RENDER TABEL TUGAS
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">Belum ada data tugas untuk ditampilkan pada filter ini.</td></tr>`;
@@ -1083,7 +1099,6 @@
                 const progress = getProp(t, ['Progress', 'progress']) || 0;
                 const docUrlRaw = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
 
-                // Deteksi Otomatis Overdue jika Lewat Deadline & Belum Selesai
                 if (status !== 'Selesai' && deadline !== '-' && deadline < todayStr) {
                     status = 'Overdue';
                 }
