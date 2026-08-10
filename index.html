@@ -497,27 +497,57 @@
             }
         }
 
+        // =========================================================================
+        // BATASAN HIERARKI KETAT UNTUK FORM INPUT TUGAS
+        // =========================================================================
         function setupMasterDataUI() {
             const isSuperAdminOrDireksi = (cleanString(currentUser.role).includes('admin') || cleanString(currentUser.level).includes('direksi') || cleanString(currentUser.dept).includes('direksi'));
 
             const allDivisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
             
+            // 1. HEADER FILTER DIVISI
             const headerDivisiSelect = document.getElementById('filter-divisi-header');
             headerDivisiSelect.innerHTML = '';
 
-            headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
-            allDivisiList.forEach(d => {
-                headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
-            });
+            if (isSuperAdminOrDireksi) {
+                headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
+                allDivisiList.forEach(d => {
+                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
+                });
+                headerDivisiSelect.disabled = false;
+            } else {
+                const userDivs = currentUser.divisiList || [currentUser.dept];
+                headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Divisi Saya (${userDivs.join(', ')})</option>`;
+                userDivs.forEach(d => {
+                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
+                });
+            }
 
-            headerDivisiSelect.value = "ALL";
-
+            // 2. MODAL FORM INPUT TUGAS (DIKUNCI SESUAI HIERARKI USER)
             const taskDivisiSelect = document.getElementById('task-divisi-target');
             taskDivisiSelect.innerHTML = '';
 
-            allDivisiList.forEach(d => {
-                taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
-            });
+            if (isSuperAdminOrDireksi) {
+                // Direksi/Admin Boleh Kirim ke Mana Saja
+                allDivisiList.forEach(d => {
+                    taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                });
+            } else {
+                // MANAJER / USER BIASA (SEPERTI DCH): TIDAK BOLEH KIRIM KE DIREKSI!
+                // Hanya bisa pilih Divisi tempat dia berwenang
+                const userDivs = (currentUser.divisiList || [currentUser.dept]);
+                userDivs.forEach(d => {
+                    // Filter buang Dewan Direksi jika terikut
+                    if (!cleanString(d).includes('direksi')) {
+                        taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                    }
+                });
+                
+                // Jika list kosong, berikan Dept bawaan user
+                if (taskDivisiSelect.options.length === 0) {
+                    taskDivisiSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
+                }
+            }
 
             updateDeptOptions();
         }
@@ -538,6 +568,10 @@
                 taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
             } else {
                 deptsInDivisi.forEach(d => {
+                    // Kunci agar tidak bisa pilih Dept Direksi jika bukan Direksi
+                    if (!cleanString(currentUser.level).includes('direksi') && cleanString(d).includes('direksi')) {
+                        return;
+                    }
                     taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
                 });
             }
@@ -551,10 +585,24 @@
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
 
-            const filteredPegawai = masterUsers.filter(u => cleanString(u.nik) !== cleanString(currentUser.nik));
+            const userLevelLower = cleanString(currentUser.level);
+
+            // FILTER KETAT PIC PENERIMA: DCH HANYA BISA BERIKAN TUGAS KE BAWAHAN / KARYAWAN NON-DIREKSI
+            const filteredPegawai = masterUsers.filter(u => {
+                // 1. Jangan tampilkan diri sendiri
+                if (cleanString(u.nik) === cleanString(currentUser.nik)) return false;
+
+                // 2. Jangan tampilkan Direksi jika yang login bukan Direksi Utama
+                if (!userLevelLower.includes('direksi') && cleanString(u.level).includes('direksi')) return false;
+
+                // 3. Jangan tampilkan Atasan yang level jabatannya lebih tinggi dari user
+                if (userLevelLower.includes('manajer') && (cleanString(u.level).includes('direksi') || cleanString(u.jabatan).includes('direktur'))) return false;
+
+                return true;
+            });
 
             if (filteredPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada pegawai lain</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada bawahan / pegawai yang sesuai</option>`;
                 return;
             }
 
@@ -650,7 +698,7 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('task-start').value = today;
             document.getElementById('task-end').value = today;
-            updateDeptOptions();
+            setupMasterDataUI();
         }
 
         async function handleSaveTask(e) {
@@ -887,7 +935,7 @@
         }
 
         // =========================================================================
-        // LOGIKA AKSEBILITAS STRICT (PENGAWAS/STAFF HANYA BISA LIHAT TUGASNYA)
+        // LOGIKA RENDER DASHBOARD PRESISI HIERARKI
         // =========================================================================
         function renderDashboard() {
             let viewable = tasksData;
@@ -904,24 +952,33 @@
             const isSuperAdminOrDireksi = (cleanString(currentUser.role).includes('admin') || userLevel.includes('direksi') || userDept.includes('direksi'));
             const isManager = userLevel.includes('manajer') || userLevel.includes('manager');
 
-            // STRICT HIERARKI AKSES TUGAS
+            // HIERARKI AKSES TUGAS
             if (!isSuperAdminOrDireksi) {
                 if (isManager) {
-                    // MANAJER: Bisa lihat tugasnya sendiri + seluruh tugas bawahan di Dept/Divisinya
+                    // MANAJER (DCH): Melihat tugas miliknya sendiri + Seluruh tugas BAWAHAN di Divisinya (Termasuk FAG)
                     const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => cleanString(d));
+                    
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
                         const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
                         const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
                         const deptTarget = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
+                        const divisiTarget = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']));
 
+                        // Apakah tugas ini ditujukan ke/dari DCH sendiri?
                         const isMine = (picNik === userNik) || (pemberiNik === userNik) || (picNama.includes(userNama));
-                        const isUnderMyDept = userDivs.some(ud => deptTarget.includes(ud) || ud.includes(deptTarget) || userDept.includes(deptTarget));
+                        
+                        // Apakah tugas ini ditujukan ke divisi/dept di bawah wewenang DCH?
+                        const isTargetUnderMyDiv = userDivs.some(ud => 
+                            divisiTarget.includes(ud) || ud.includes(divisiTarget) || 
+                            deptTarget.includes(ud) || ud.includes(deptTarget) ||
+                            userDept.includes(deptTarget)
+                        );
 
-                        return isMine || isUnderMyDept;
+                        return isMine || isTargetUnderMyDiv;
                     });
                 } else {
-                    // PENGAWAS / SUPERVISOR / STAFF: KHUSUS TUGAS DIRI SENDIRI (TIDAK BISA MENGINTIP TUGAS ATASAN)
+                    // PENGAWAS / STAFF (FAG): HANYA BISA LIHAT TUGAS MILIKNYA SENDIRI
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
                         const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
@@ -930,7 +987,6 @@
                         const isPicMatch = (picNik !== '' && picNik === userNik) || (picNama !== '' && (picNama.includes(userNama) || userNama.includes(picNama)));
                         const isPemberiMatch = (pemberiNik !== '' && pemberiNik === userNik);
 
-                        // HANYA TERBACA JIKA TUGAS INI UNTUK DIA ATAU DIA YANG MEMBERI KE BAWAHANNYA
                         return isPicMatch || isPemberiMatch;
                     });
                 }
