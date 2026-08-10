@@ -331,7 +331,7 @@
                     <p id="update-task-title" class="font-extrabold text-white bg-cardBg p-3 rounded-xl border border-borderDark text-sm"></p>
                 </div>
 
-                <!-- TOMBOL STATUS EKSPLISIT SESUAI APPORVAL HIERARKI -->
+                <!-- TOMBOL STATUS EKSPLISIT -->
                 <div class="bg-cardBg/80 p-3 rounded-xl border border-borderDark space-y-1.5">
                     <label class="block font-bold text-gray-300 uppercase text-[10px] tracking-wider">Pilih Status Laporan Tugas:</label>
                     <div class="grid grid-cols-3 gap-2">
@@ -372,7 +372,7 @@
                     </div>
                 </div>
 
-                <!-- RIWAYAT CATATAN & FEEDBACK (THREAD LENGKAP) -->
+                <!-- RIWAYAT CATATAN & FEEDBACK -->
                 <div class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <label class="block font-bold text-amber-400 flex items-center gap-1.5 text-xs">
                         <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Histori Feedback & Catatan Laporan:
@@ -429,7 +429,11 @@
         let tasksData = [];
         let readNotifications = JSON.parse(localStorage.getItem('read_notifs') || '[]');
 
-        // MENCARI PROPERTI OBJEK TANPA TERPENGARUH NAMA KOLOM / CASE-SENSITIVE
+        function cleanString(str) {
+            return String(str || '').toLowerCase().trim();
+        }
+
+        // FUNGSI GETPROP ROBUS UNTUK MENCARI NAMA KOLOM APA PUN
         function getProp(obj, keys) {
             if (!obj) return '';
             const objKeys = Object.keys(obj);
@@ -446,10 +450,6 @@
                 }
             }
             return '';
-        }
-
-        function cleanString(str) {
-            return String(str || '').toLowerCase().trim();
         }
 
         async function handleLogin(e) {
@@ -499,42 +499,29 @@
         }
 
         function setupMasterDataUI() {
-            const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || currentUser.level === 'Direksi' || currentUser.dept === 'Dewan Direksi');
+            const isSuperAdminOrDireksi = (cleanString(currentUser.role).includes('admin') || cleanString(currentUser.level).includes('direksi') || cleanString(currentUser.dept).includes('direksi'));
 
             const allDivisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
             
             const headerDivisiSelect = document.getElementById('filter-divisi-header');
             headerDivisiSelect.innerHTML = '';
 
-            if (isSuperAdminOrDireksi) {
-                headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
-                allDivisiList.forEach(d => {
-                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
-                });
-                headerDivisiSelect.disabled = false;
-            } else {
-                const userDivs = currentUser.divisiList || [currentUser.dept];
-                userDivs.forEach(d => {
-                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
-                });
-                headerDivisiSelect.disabled = userDivs.length <= 1;
+            headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
+            allDivisiList.forEach(d => {
+                headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
+            });
+
+            const userDivs = currentUser.divisiList || [currentUser.dept];
+            if (!isSuperAdminOrDireksi) {
+                headerDivisiSelect.value = "ALL"; 
             }
 
             const taskDivisiSelect = document.getElementById('task-divisi-target');
             taskDivisiSelect.innerHTML = '';
 
-            if (isSuperAdminOrDireksi) {
-                allDivisiList.forEach(d => {
-                    taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
-                });
-                taskDivisiSelect.disabled = false;
-            } else {
-                const userDivs = currentUser.divisiList || [currentUser.dept];
-                userDivs.forEach(d => {
-                    taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
-                });
-                taskDivisiSelect.disabled = false;
-            }
+            allDivisiList.forEach(d => {
+                taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
+            });
 
             updateDeptOptions();
         }
@@ -568,31 +555,10 @@
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
 
-            const deptManagerRows = masterHirearki.filter(h => 
-                String(h.Departemen || h.departemen || '').trim() === String(selectedDept).trim() ||
-                String(h.Divisi || h.divisi || '').trim() === String(selectedDivisi).trim()
-            );
-
-            const deptManagerJabatans = [...new Set(deptManagerRows.map(h => String(h.Jabatan || h.jabatan || '').trim()))];
-
-            const filteredPegawai = masterUsers.filter(u => {
-                if (String(u.nik).trim() === String(currentUser.nik).trim()) return false;
-
-                if (currentUser.jabatan === 'Direktur' && u.jabatan === 'Direktur Utama') return false;
-
-                const isExactDeptMember = String(u.dept).trim() === String(selectedDept).trim();
-                const isDeptManager = deptManagerJabatans.includes(u.jabatan) && (u.level === 'Manajer' || u.level === 'Manager');
-
-                if (!isExactDeptMember && !isDeptManager) return false;
-
-                if (currentUser.jabatan === 'Direktur Utama') return true;
-                if (currentUser.level === 'Direksi' && u.level !== 'Direksi') return true;
-
-                return true;
-            });
+            const filteredPegawai = masterUsers.filter(u => cleanString(u.nik) !== cleanString(currentUser.nik));
 
             if (filteredPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada pegawai di dept ${selectedDept}</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada pegawai lain</option>`;
                 return;
             }
 
@@ -924,7 +890,7 @@
             return 'DPS';
         }
 
-        // LOGIKA FILTER AKSES UTAMA (PRESISI HIERARKI & PEMBERSIHAN STRING)
+        // FUNGSI UTAMA RENDER DASHBOARD DENGAN LOGIKA FILTER SANGAT FLEKSIBEL
         function renderDashboard() {
             let viewable = tasksData;
 
@@ -935,26 +901,27 @@
             const userLevel = cleanString(currentUser.level);
             const userNik = cleanString(currentUser.nik);
             const userNama = cleanString(currentUser.nama);
+            const userDept = cleanString(currentUser.dept);
             
-            const isSuperAdminOrDireksi = (cleanString(currentUser.role).includes('admin') || userLevel.includes('direksi') || cleanString(currentUser.dept).includes('direksi'));
-            const isManager = userLevel.includes('manajer') || userLevel.includes('manager');
+            const isSuperAdminOrDireksi = (cleanString(currentUser.role).includes('admin') || userLevel.includes('direksi') || userDept.includes('direksi'));
+            const isManagerOrSupervisor = userLevel.includes('manajer') || userLevel.includes('manager') || userLevel.includes('pengawas') || userLevel.includes('supervisor');
 
-            // FILTER HAK AKSES BERDASARKAN HIERARKI
+            // LOGIKA AKSES BERJENJANG
             if (!isSuperAdminOrDireksi) {
-                if (isManager) {
+                if (isManagerOrSupervisor) {
                     const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => cleanString(d));
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
                         const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
+                        const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
                         const deptTarget = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
 
-                        const isMine = (picNik === userNik) || (pemberiNik === userNik);
-                        const isUnderMyDept = userDivs.some(ud => deptTarget.includes(ud) || ud.includes(deptTarget));
+                        const isMine = (picNik === userNik) || (pemberiNik === userNik) || (picNama.includes(userNama));
+                        const isUnderMyDept = userDivs.some(ud => deptTarget.includes(ud) || ud.includes(deptTarget) || userDept.includes(deptTarget));
 
                         return isMine || isUnderMyDept;
                     });
                 } else {
-                    // UNTUK STAFFER / SUPERVISOR (MISAL FAG)
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
                         const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
@@ -998,7 +965,7 @@
                 });
             }
 
-            // NOTIFIKASI TUGAS MASUK
+            // NOTIFIKASI
             const myReceivedTasks = tasksData.filter(t => {
                 const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik']));
                 const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama']));
@@ -1045,7 +1012,7 @@
                 }).join('');
             }
 
-            // STATISTIK INDIKATOR DASHBOARD
+            // STATISTIK INDIKATOR
             let cProgress = 0, cWarning = 0, cLate = 0, cDone = 0, cOverdue = 0;
             const todayStr = new Date().toISOString().split('T')[0];
 
