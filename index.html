@@ -177,10 +177,8 @@
                             <span class="text-[10px] font-bold text-gray-400 uppercase">Status:</span>
                             <select id="filter-status-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
                                 <option value="ALL" class="bg-cardBg">Semua Status</option>
-                                <option value="PROGRESS" class="bg-cardBg">In Progress / Verif</option>
-                                <option value="EARLY" class="bg-cardBg">Early Warning</option>
-                                <option value="LATE" class="bg-cardBg">Late Warning</option>
-                                <option value="DONE" class="bg-cardBg">Selesai / Approved</option>
+                                <option value="PROGRESS" class="bg-cardBg">In Progress</option>
+                                <option value="SELESAI" class="bg-cardBg">Selesai / Approved</option>
                                 <option value="OVERDUE" class="bg-cardBg">Overdue / Terlewat</option>
                             </select>
                         </div>
@@ -314,60 +312,80 @@
         </div>
     </div>
 
-    <!-- MODAL UPDATE PROGRESS & UPLOAD DOKUMEN PEKERJAAN (MAKS 5MB) -->
+    <!-- MODAL UPDATE PROGRESS, FEEDBACK HISTORI, & UPLOAD DOKUMEN PEKERJAAN -->
     <div id="modal-update-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
                 <h3 class="font-bold text-sm text-white flex items-center gap-2">
-                    <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Update Pekerjaan & Report PIC
+                    <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Detail Tugas, Feedback & Report Dokumen
                 </h3>
                 <button onclick="document.getElementById('modal-update-task').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
             </div>
 
-            <form onsubmit="handleSaveTaskUpdate(event)" class="space-y-3 text-xs">
+            <form onsubmit="handleSaveTaskUpdate(event)" class="space-y-4 text-xs">
                 <input type="hidden" id="update-task-id">
+                <input type="hidden" id="selected-status-btn" value="In Progress">
 
                 <div>
                     <label class="block font-bold text-indigo-300 mb-1">Judul Pekerjaan:</label>
-                    <p id="update-task-title" class="font-extrabold text-white bg-cardBg p-2.5 rounded-xl border border-borderDark"></p>
+                    <p id="update-task-title" class="font-extrabold text-white bg-cardBg p-3 rounded-xl border border-borderDark text-sm"></p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
+                <!-- TOMBOL STATUS EKSPLISIT SESUAI APPORVAL HIERARKI -->
+                <div class="bg-cardBg/80 p-3 rounded-xl border border-borderDark space-y-1.5">
+                    <label class="block font-bold text-gray-300 uppercase text-[10px] tracking-wider">Pilih Status Laporan Tugas:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" id="btn-status-progress" onclick="selectTaskStatus('In Progress')" class="py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="clock" class="w-3.5 h-3.5"></i> In Progress
+                        </button>
+                        <button type="button" id="btn-status-selesai" onclick="selectTaskStatus('Selesai')" class="py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Selesai
+                        </button>
+                        <button type="button" id="btn-status-overdue" onclick="selectTaskStatus('Overdue')" class="py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Overdue
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block font-semibold text-gray-300 mb-1">Progress Kerja (%)</label>
                         <input type="number" id="update-progress" min="0" max="100" required class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white font-bold text-emerald-400 focus:outline-none">
                     </div>
                     <div>
-                        <label class="block font-semibold text-gray-300 mb-1">Status Laporan</label>
-                        <select id="update-status" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white font-bold focus:outline-none">
-                            <option value="In Progress">In Progress (Sedang Dikerjakan)</option>
-                            <option value="Menunggu Verif">Menunggu Verifikasi Atasan</option>
-                            <option value="Selesai">Selesai / Approved</option>
-                        </select>
+                        <label class="block font-semibold text-gray-300 mb-1">Unggah Lampiran Dokumen Baru (Maks 5MB)</label>
+                        <input type="file" id="update-file" class="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brandPurple file:text-white hover:file:bg-indigo-500 cursor-pointer">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-gray-300 mb-1">Catatan Laporan / Progres Kerja</label>
-                    <textarea id="update-catatan" rows="3" placeholder="Tuliskan perkembangan tugas, kendala, atau hasil kerja..." class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none"></textarea>
+                    <label class="block font-semibold text-gray-300 mb-1">Tambah Catatan / Feedback Baru</label>
+                    <textarea id="update-catatan" rows="2" placeholder="Tuliskan perkembangan tugas, kendala, atau revisi..." class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none"></textarea>
                 </div>
 
-                <div class="bg-cardBg/60 p-3 rounded-xl border border-borderDark space-y-2">
-                    <label class="block font-bold text-amber-400 flex items-center gap-1.5">
-                        <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload Lampiran / Dokumen Laporan (Maks 5MB)
+                <!-- RIWAYAT DOKUMEN LAMPIRAN TERDAHULU -->
+                <div id="existing-doc-container" class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
+                    <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
+                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i> Riwayat Dokumen Lampiran Tugas Ini:
                     </label>
-                    <input type="file" id="update-file" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brandPurple file:text-white hover:file:bg-indigo-500 cursor-pointer">
-                    <p class="text-[10px] text-gray-500">File akan ter-upload otomatis ke Google Drive PT Persada Medika Utama & link-nya terhubung ke GSheet.</p>
+                    <div id="existing-doc-list" class="space-y-1 max-h-24 overflow-y-auto">
+                    </div>
                 </div>
 
-                <div id="existing-doc-link" class="hidden text-xs bg-cardBg p-2 rounded-xl border border-borderDark">
-                    <span class="text-gray-400 font-semibold">Lampiran Dokumen Saat Ini: </span>
-                    <a id="doc-link-href" href="#" target="_blank" class="text-brandPurple font-bold underline">Buka Lampiran Drive 🔗</a>
+                <!-- RIWAYAT CATATAN & FEEDBACK (THREAD LENGKAP) -->
+                <div class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
+                    <label class="block font-bold text-amber-400 flex items-center gap-1.5 text-xs">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Histori Feedback & Catatan Laporan:
+                    </label>
+                    <div id="feedback-history-list" class="bg-panelBg p-3 rounded-xl border border-borderDark/60 max-h-40 overflow-y-auto text-[11px] space-y-2 font-mono whitespace-pre-wrap text-gray-300">
+                    </div>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2 border-t border-borderDark">
                     <button type="button" onclick="document.getElementById('modal-update-task').classList.add('hidden')" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
-                    <button type="submit" id="btn-save-update" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow">Simpan Laporan Progress</button>
+                    <button type="submit" id="btn-save-update" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow flex items-center gap-1.5">
+                        <i data-lucide="save" class="w-4 h-4"></i> Simpan Progress & Feedback
+                    </button>
                 </div>
             </form>
         </div>
@@ -682,7 +700,7 @@
                 lateWarningHari: document.getElementById('task-late').value,
                 earlyWarningHari: document.getElementById('task-early').value,
                 catatanBebas: document.getElementById('task-catatan').value,
-                status: 'Menunggu Verif',
+                status: 'In Progress',
                 progress: 0,
                 picNik: picNikVal,
                 picNama: picNamaVal,
@@ -706,6 +724,29 @@
             });
         }
 
+        // FUNGSI MEMILIH STATUS EKSPLISIT SESUAI APPORVAL
+        function selectTaskStatus(status) {
+            document.getElementById('selected-status-btn').value = status;
+            
+            const btnProg = document.getElementById('btn-status-progress');
+            const btnDone = document.getElementById('btn-status-selesai');
+            const btnOver = document.getElementById('btn-status-overdue');
+
+            // Reset Kelas
+            btnProg.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
+            btnDone.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
+            btnOver.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
+
+            if (status === 'In Progress') {
+                btnProg.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-indigo-600/30 border-indigo-500 text-indigo-300 shadow";
+            } else if (status === 'Selesai') {
+                btnDone.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-emerald-600/30 border-emerald-500 text-emerald-300 shadow";
+                document.getElementById('update-progress').value = 100;
+            } else if (status === 'Overdue') {
+                btnOver.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-rose-600/30 border-rose-500 text-rose-300 shadow";
+            }
+        }
+
         function openUpdateTaskModal(id) {
             const t = tasksData.find(x => getProp(x, ['TaskID', 'id', 'ID']) === String(id));
             if (!t) return;
@@ -713,32 +754,56 @@
             document.getElementById('update-task-id').value = id;
             document.getElementById('update-task-title').innerText = `${id} - ${getProp(t, ['Judul', 'judul'])}`;
             document.getElementById('update-progress').value = getProp(t, ['Progress', 'progress']) || 0;
-            document.getElementById('update-status').value = getProp(t, ['Status', 'status']) || 'In Progress';
             document.getElementById('update-catatan').value = '';
             document.getElementById('update-file').value = '';
 
-            const existingDoc = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
-            const existingDocContainer = document.getElementById('existing-doc-link');
-            if (existingDoc && existingDoc.startsWith('http')) {
-                document.getElementById('doc-link-href').href = existingDoc;
-                existingDocContainer.classList.remove('hidden');
+            const currentStatus = getProp(t, ['Status', 'status']) || 'In Progress';
+            selectTaskStatus(currentStatus);
+
+            // Buka Riwayat Dokumen
+            const existingDocRaw = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
+            const docListElem = document.getElementById('existing-doc-list');
+            docListElem.innerHTML = '';
+
+            if (existingDocRaw) {
+                const urls = existingDocRaw.split(',').filter(u => u.trim().startsWith('http'));
+                if (urls.length > 0) {
+                    urls.forEach((u, idx) => {
+                        docListElem.innerHTML += `
+                            <div class="flex items-center justify-between text-[11px] bg-panelBg p-1.5 px-2.5 rounded-lg border border-borderDark">
+                                <span class="text-gray-300 font-medium">📄 Dokumen Lampiran #${idx + 1}</span>
+                                <a href="${u.trim()}" target="_blank" class="text-brandPurple font-bold hover:underline flex items-center gap-1">
+                                    Buka File <i data-lucide="external-link" class="w-3 h-3"></i>
+                                </a>
+                            </div>
+                        `;
+                    });
+                } else {
+                    docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
+                }
             } else {
-                existingDocContainer.classList.add('hidden');
+                docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
             }
 
+            // Buka Riwayat Feedback & Catatan
+            const feedbackHistory = getProp(t, ['Catatan', 'catatan', 'CatatanBebas']);
+            const feedbackElem = document.getElementById('feedback-history-list');
+            feedbackElem.innerText = feedbackHistory || 'Belum ada catatan histori.';
+
+            lucide.createIcons();
             document.getElementById('modal-update-task').classList.remove('hidden');
         }
 
-        // SIMPAN DOKUMEN & UPDATE PROGRESS (UPLOADER MAX 5MB)
+        // SIMPAN DOKUMEN & UPDATE PROGRESS + FEEDBACK
         async function handleSaveTaskUpdate(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-save-update');
             btn.disabled = true;
-            btn.innerText = 'UPLOADING & MEMPERBARUI...';
+            btn.innerText = 'MENYIMPAN PROGRESS & UPLOADING...';
 
             const taskId = document.getElementById('update-task-id').value;
             const progress = document.getElementById('update-progress').value;
-            const status = document.getElementById('update-status').value;
+            const status = document.getElementById('selected-status-btn').value;
             const catatan = document.getElementById('update-catatan').value;
             const fileInput = document.getElementById('update-file');
 
@@ -749,7 +814,7 @@
                 if (file.size > 5 * 1024 * 1024) {
                     alert('Ukuran file maksimal adalah 5MB!');
                     btn.disabled = false;
-                    btn.innerText = 'SIMPAN LAPORAN PROGRESS';
+                    btn.innerText = 'SIMPAN PROGRESS & FEEDBACK';
                     return;
                 }
 
@@ -782,7 +847,7 @@
 
                 const res = await response.json();
                 if (res.status === 'success') {
-                    alert('Laporan & Lampiran berhasil disimpan ke GSheet!');
+                    alert('Progress, Feedback, & Dokumen Lampiran berhasil disimpan!');
                     document.getElementById('modal-update-task').classList.add('hidden');
                     fetchDataFromGAS();
                 } else {
@@ -793,7 +858,7 @@
                 alert('Terjadi kesalahan saat upload!');
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'SIMPAN LAPORAN PROGRESS';
+                btn.innerText = 'SIMPAN PROGRESS & FEEDBACK';
             }
         }
 
@@ -863,10 +928,9 @@
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || userLevel === 'direksi' || currentUser.dept === 'Dewan Direksi');
             const isManager = userLevel.includes('manajer') || userLevel.includes('manager');
 
-            // 1. KETATNYA HAK AKSES BERDASARKAN HIERARKI (FAG TIDAK BISA BACA TUGAS DCH)
+            // HAK AKSES BERDASARKAN HIERARKI (FAG TIDAK BISA BACA TUGAS DCH)
             if (!isSuperAdminOrDireksi) {
                 if (isManager) {
-                    // MANAJER (DCH): BISA LIHAT TUGAS DIRINYA + TUGAS BAWAHAN DENGAN DEPT SAMA / DIVISION SAMA
                     const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => d.toLowerCase());
                     viewable = viewable.filter(t => {
                         const picNik = getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']);
@@ -879,7 +943,6 @@
                         return isMine || isUnderMyDept;
                     });
                 } else {
-                    // BAWAHAN / STAFFER (FAG): KHUSUS TUGAS DIRI SENDIRI (NAMA/NIK KETEMU DIPIC ATAU PEMBERI)
                     viewable = viewable.filter(t => {
                         const picNik = getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']);
                         const pemberiNik = getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']);
@@ -912,10 +975,8 @@
             if (filterStatus !== 'ALL') {
                 viewable = viewable.filter(t => {
                     const st = getProp(t, ['Status', 'status']).toUpperCase();
-                    if (filterStatus === 'PROGRESS') return st.includes('VERIF') || st.includes('PROGRESS') || st.includes('AKTIF');
-                    if (filterStatus === 'EARLY') return st.includes('EARLY');
-                    if (filterStatus === 'LATE') return st.includes('LATE');
-                    if (filterStatus === 'DONE') return st.includes('SELESAI') || st.includes('APPROVED');
+                    if (filterStatus === 'PROGRESS') return st.includes('PROGRESS') || st.includes('VERIF');
+                    if (filterStatus === 'SELESAI') return st.includes('SELESAI') || st.includes('APPROVED');
                     if (filterStatus === 'OVERDUE') return st.includes('OVERDUE') || st.includes('TERLEWAT');
                     return true;
                 });
@@ -968,15 +1029,25 @@
                 }).join('');
             }
 
-            // STATISTIK INDIKATOR BOKS DASHBOARD BESAR
+            // STATISTIK INDIKATOR DASHBOARD
             let cProgress = 0, cWarning = 0, cLate = 0, cDone = 0, cOverdue = 0;
+            const todayStr = new Date().toISOString().split('T')[0];
+
             viewable.forEach(t => {
                 const st = getProp(t, ['Status', 'status']).toUpperCase();
-                if (st.includes('SELESAI') || st.includes('APPROVED')) cDone++;
-                else if (st.includes('OVERDUE') || st.includes('TERLEWAT')) cOverdue++;
-                else if (st.includes('EARLY')) cWarning++;
-                else if (st.includes('LATE')) cLate++;
-                else cProgress++;
+                const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']);
+
+                if (st.includes('SELESAI') || st.includes('APPROVED')) {
+                    cDone++;
+                } else if (st.includes('OVERDUE') || (deadline && deadline < todayStr)) {
+                    cOverdue++;
+                } else if (st.includes('EARLY')) {
+                    cWarning++;
+                } else if (st.includes('LATE')) {
+                    cLate++;
+                } else {
+                    cProgress++;
+                }
             });
 
             document.getElementById('stat-total').innerText = viewable.length;
@@ -986,7 +1057,7 @@
             document.getElementById('stat-done').innerText = cDone;
             document.getElementById('stat-overdue').innerText = cOverdue;
 
-            // RENDER TABEL TUGAS DENGAN TOMBOL UPDATE TUGAS
+            // RENDER TABEL TUGAS DENGAN BADGE STATUS & LAMPRAN
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">Belum ada data tugas untuk ditampilkan pada filter ini.</td></tr>`;
@@ -1008,11 +1079,21 @@
                 const divisiDeptFormatted = `${targetDiv} / ${targetDept}`;
 
                 const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']) || '-';
-                const status = getProp(t, ['Status', 'status']) || 'Menunggu Verif';
+                let status = getProp(t, ['Status', 'status']) || 'In Progress';
                 const progress = getProp(t, ['Progress', 'progress']) || 0;
-                const docUrl = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
+                const docUrlRaw = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
 
-                const hasFileBadge = (docUrl && docUrl.startsWith('http')) ? `<a href="${docUrl}" target="_blank" class="text-[10px] text-indigo-400 underline block font-bold mt-0.5">📂 Ada Lampiran File</a>` : '';
+                // Deteksi Otomatis Overdue jika Lewat Deadline & Belum Selesai
+                if (status !== 'Selesai' && deadline !== '-' && deadline < todayStr) {
+                    status = 'Overdue';
+                }
+
+                let statusBadgeClass = 'bg-indigo-950/80 border-indigo-500/50 text-indigo-300';
+                if (status === 'Selesai') statusBadgeClass = 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300';
+                else if (status === 'Overdue') statusBadgeClass = 'bg-rose-950/80 border-rose-500/50 text-rose-300 animate-pulse';
+
+                const docCount = docUrlRaw ? docUrlRaw.split(',').filter(u => u.trim().startsWith('http')).length : 0;
+                const hasFileBadge = docCount > 0 ? `<span class="text-[10px] text-brandPurple font-bold flex items-center gap-1 mt-0.5"><i data-lucide="paperclip" class="w-3 h-3"></i> ${docCount} Lampiran File</span>` : '';
 
                 return `
                     <tr id="row-${id}" class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
@@ -1032,7 +1113,7 @@
                         </td>
                         <td class="py-3 px-4 font-mono text-amber-400">${deadline}</td>
                         <td class="py-3 px-4">
-                            <span class="px-2 py-0.5 bg-cardBg border border-borderDark rounded-full text-[10px] font-bold text-indigo-300">${status}</span>
+                            <span class="px-2 py-0.5 border rounded-full text-[10px] font-bold ${statusBadgeClass}">${status}</span>
                             <div class="w-24 bg-cardBg rounded-full h-1.5 mt-1 border border-borderDark">
                                 <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${progress}%"></div>
                             </div>
@@ -1040,7 +1121,7 @@
                         </td>
                         <td class="py-3 px-4 text-right">
                             <button onclick="openUpdateTaskModal('${id}')" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-bold transition flex items-center gap-1 ml-auto shadow">
-                                <i data-lucide="edit-3" class="w-3 h-3"></i> Update Task
+                                <i data-lucide="edit-3" class="w-3 h-3"></i> Update / Detail
                             </button>
                         </td>
                     </tr>
