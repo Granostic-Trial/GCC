@@ -177,7 +177,7 @@
                             <span class="text-[10px] font-bold text-gray-400 uppercase">Status:</span>
                             <select id="filter-status-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
                                 <option value="ALL" class="bg-cardBg">Semua Status</option>
-                                <option value="PROGRESS" class="bg-cardBg">In Progress</option>
+                                <option value="PROGRESS" class="bg-cardBg">In Progress / Menunggu Verif</option>
                                 <option value="SELESAI" class="bg-cardBg">Selesai / Approved</option>
                                 <option value="OVERDUE" class="bg-cardBg">Overdue / Terlewat</option>
                             </select>
@@ -429,6 +429,7 @@
         let tasksData = [];
         let readNotifications = JSON.parse(localStorage.getItem('read_notifs') || '[]');
 
+        // PENYELARASAN PEMBACAAN PROPERTI BISA DENGAN GARIS BAWAH ATAU TANPA GARIS BAWAH
         function getProp(obj, keys) {
             for (let k of keys) {
                 if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
@@ -732,7 +733,6 @@
             const btnDone = document.getElementById('btn-status-selesai');
             const btnOver = document.getElementById('btn-status-overdue');
 
-            // Reset Kelas
             btnProg.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
             btnDone.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
             btnOver.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
@@ -928,7 +928,7 @@
             const isSuperAdminOrDireksi = (currentUser.role === 'Super Admin' || currentUser.role === 'SUPER_ADMIN' || userLevel === 'direksi' || currentUser.dept === 'Dewan Direksi');
             const isManager = userLevel.includes('manajer') || userLevel.includes('manager');
 
-            // HAK AKSES BERDASARKAN HIERARKI (FAG TIDAK BISA BACA TUGAS DCH)
+            // HAK AKSES BERDASARKAN HIERARKI DENGAN PENELUSURAN DUA NAMA HEADER (DENGAN/TANPA UNDERSCORE)
             if (!isSuperAdminOrDireksi) {
                 if (isManager) {
                     const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => d.toLowerCase());
@@ -971,11 +971,11 @@
                 });
             }
 
-            // FILTER STATUS TUGAS
+            // FILTER STATUS TUGAS (MEMASUKKAN STATUS "Menunggu Verif" DAN "In Progress")
             if (filterStatus !== 'ALL') {
                 viewable = viewable.filter(t => {
                     const st = getProp(t, ['Status', 'status']).toUpperCase();
-                    if (filterStatus === 'PROGRESS') return st.includes('PROGRESS') || st.includes('VERIF');
+                    if (filterStatus === 'PROGRESS') return st.includes('PROGRESS') || st.includes('VERIF') || st === '';
                     if (filterStatus === 'SELESAI') return st.includes('SELESAI') || st.includes('APPROVED');
                     if (filterStatus === 'OVERDUE') return st.includes('OVERDUE') || st.includes('TERLEWAT');
                     return true;
@@ -984,8 +984,8 @@
 
             // NOTIFIKASI KHUSUS PENERIMA TUGAS
             const myReceivedTasks = tasksData.filter(t => {
-                const picNik = getProp(t, ['PIC_NIK', 'picNik']);
-                const picNama = getProp(t, ['PIC_Nama', 'picNama']);
+                const picNik = getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']);
+                const picNama = getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']);
                 return picNik === userNik || picNama.includes(currentUser.nama);
             });
 
@@ -1039,7 +1039,7 @@
 
                 if (st.includes('SELESAI') || st.includes('APPROVED')) {
                     cDone++;
-                } else if (st.includes('OVERDUE') || (deadline && deadline < todayStr)) {
+                } else if (st.includes('OVERDUE') || (deadline && deadline < todayStr && deadline !== '-')) {
                     cOverdue++;
                 } else if (st.includes('EARLY')) {
                     cWarning++;
@@ -1057,7 +1057,7 @@
             document.getElementById('stat-done').innerText = cDone;
             document.getElementById('stat-overdue').innerText = cOverdue;
 
-            // RENDER TABEL TUGAS DENGAN BADGE STATUS & LAMPRAN
+            // RENDER TABEL TUGAS DENGAN BADGE STATUS & LAMPIRAN
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">Belum ada data tugas untuk ditampilkan pada filter ini.</td></tr>`;
@@ -1072,7 +1072,7 @@
                 const judul = getProp(t, ['Judul', 'judul']);
                 
                 const pemberi = resolvePemberiNama(t);
-                const penerima = getProp(t, ['PIC_Nama', 'picNama', 'PIC_NIK', 'picNik']);
+                const penerima = getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama', 'PIC_NIK', 'picNik']);
                 
                 const targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']) || 'SDM, Umum, & TI';
                 const targetDept = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']);
