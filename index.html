@@ -433,7 +433,6 @@
             return String(str || '').toLowerCase().trim();
         }
 
-        // FUNGSI GETPROP ROBUS UNTUK MENCARI NAMA KOLOM APA PUN
         function getProp(obj, keys) {
             if (!obj) return '';
             const objKeys = Object.keys(obj);
@@ -511,10 +510,7 @@
                 headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
             });
 
-            const userDivs = currentUser.divisiList || [currentUser.dept];
-            if (!isSuperAdminOrDireksi) {
-                headerDivisiSelect.value = "ALL"; 
-            }
+            headerDivisiSelect.value = "ALL";
 
             const taskDivisiSelect = document.getElementById('task-divisi-target');
             taskDivisiSelect.innerHTML = '';
@@ -890,7 +886,9 @@
             return 'DPS';
         }
 
-        // FUNGSI UTAMA RENDER DASHBOARD DENGAN LOGIKA FILTER SANGAT FLEKSIBEL
+        // =========================================================================
+        // LOGIKA AKSEBILITAS STRICT (PENGAWAS/STAFF HANYA BISA LIHAT TUGASNYA)
+        // =========================================================================
         function renderDashboard() {
             let viewable = tasksData;
 
@@ -904,11 +902,12 @@
             const userDept = cleanString(currentUser.dept);
             
             const isSuperAdminOrDireksi = (cleanString(currentUser.role).includes('admin') || userLevel.includes('direksi') || userDept.includes('direksi'));
-            const isManagerOrSupervisor = userLevel.includes('manajer') || userLevel.includes('manager') || userLevel.includes('pengawas') || userLevel.includes('supervisor');
+            const isManager = userLevel.includes('manajer') || userLevel.includes('manager');
 
-            // LOGIKA AKSES BERJENJANG
+            // STRICT HIERARKI AKSES TUGAS
             if (!isSuperAdminOrDireksi) {
-                if (isManagerOrSupervisor) {
+                if (isManager) {
+                    // MANAJER: Bisa lihat tugasnya sendiri + seluruh tugas bawahan di Dept/Divisinya
                     const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => cleanString(d));
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
@@ -922,16 +921,17 @@
                         return isMine || isUnderMyDept;
                     });
                 } else {
+                    // PENGAWAS / SUPERVISOR / STAFF: KHUSUS TUGAS DIRI SENDIRI (TIDAK BISA MENGINTIP TUGAS ATASAN)
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
                         const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
                         const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
 
-                        const isPicNikMatch = (picNik !== '' && picNik === userNik);
-                        const isPemberiNikMatch = (pemberiNik !== '' && pemberiNik === userNik);
-                        const isPicNamaMatch = (picNama !== '' && (picNama.includes(userNama) || userNama.includes(picNama)));
+                        const isPicMatch = (picNik !== '' && picNik === userNik) || (picNama !== '' && (picNama.includes(userNama) || userNama.includes(picNama)));
+                        const isPemberiMatch = (pemberiNik !== '' && pemberiNik === userNik);
 
-                        return isPicNikMatch || isPemberiNikMatch || isPicNamaMatch;
+                        // HANYA TERBACA JIKA TUGAS INI UNTUK DIA ATAU DIA YANG MEMBERI KE BAWAHANNYA
+                        return isPicMatch || isPemberiMatch;
                     });
                 }
             }
