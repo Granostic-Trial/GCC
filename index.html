@@ -98,7 +98,6 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- DROPDOWN NOTIFIKASI LONCENG -->
                 <div class="relative">
                     <button onclick="toggleNotifDropdown(event)" class="relative bg-cardBg border border-borderDark p-2 rounded-xl text-amber-400 hover:text-amber-300 transition flex items-center justify-center" title="Notifikasi Tugas">
                         <i data-lucide="bell" class="w-4 h-4"></i>
@@ -735,46 +734,37 @@
 
             const userNik = cleanString(currentUser.nik);
             const userNama = cleanString(currentUser.nama);
-            const userRank = currentUser.rank;
 
-            if (!isDirekturUtama()) { // Jika bukan Direktur Utama (DPS)
-                if (userRank <= 3) { 
-                    // Level Direktur & Manajer (AHW, DCH, HPN)
-                    const myDivisions = (currentUser.divisiList || [currentUser.dept]).map(cleanString);
-                    const myDept = cleanString(currentUser.dept);
+            // ISOLASI MATI BERDASARKAN DIVISI & HIERARKI
+            if (!isDirekturUtama()) { // Jika BUKAN Direktur Utama (DPS)
+                
+                // Ambil divisi sah milik user (AHW = ['laboratorium', 'klinik'])
+                const myAllowedDivs = (currentUser.divisiList || []).map(d => cleanString(d)).filter(Boolean);
+                const myDept = cleanString(currentUser.dept);
 
-                    viewable = viewable.filter(t => {
-                        const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
-                        const pmbNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
-                        const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
-                        
-                        const divTarget = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi', 'Divisi']));
-                        const deptTarget = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
+                viewable = viewable.filter(t => {
+                    const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
+                    const pmbNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
+                    const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
+                    
+                    const taskDiv = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi', 'Divisi']));
+                    const taskDept = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
 
-                        const isMyDirectTask = (picNik !== '' && picNik === userNik) || 
-                                               (pmbNik !== '' && pmbNik === userNik) || 
-                                               (picNama !== '' && picNama.includes(userNama));
-                        
-                        if (isMyDirectTask) return true;
+                    // 1. Tugas langsung milik user
+                    const isMyTask = (picNik !== '' && picNik === userNik) || 
+                                     (pmbNik !== '' && pmbNik === userNik) || 
+                                     (picNama !== '' && picNama.includes(userNama));
+                    
+                    if (isMyTask) return true;
 
-                        // AHW (Laboratorium, Klinik) DILINDUNGI TOTAL DARI MELIHAT DIVISI "SDM, Umum, & TI"
-                        const matchDiv = myDivisions.some(md => md !== '' && (divTarget.includes(md) || md.includes(divTarget)));
-                        const matchDept = (myDept !== '' && (deptTarget.includes(myDept) || myDept.includes(deptTarget)));
+                    // 2. ISOLASI WEWENANG:
+                    // Cek apakah Divisi Tugas cocok dengan Divisi Wewenang User
+                    // AHW (Laboratorium, Klinik) WAJIB FALSE saat mengecek Divisi "SDM, Umum, & TI"
+                    const matchDiv = myAllowedDivs.some(md => md !== '' && taskDiv !== '' && (taskDiv.includes(md) || md.includes(taskDiv)));
+                    const matchDept = (myDept !== '' && taskDept !== '' && (taskDept.includes(myDept) || myDept.includes(taskDept)));
 
-                        return matchDiv || matchDept;
-                    });
-                } else {
-                    // Staf / Pengawas: Kunci 100% hanya tugas yang melibatkan dirinya
-                    viewable = viewable.filter(t => {
-                        const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
-                        const pmbNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
-                        const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
-
-                        return (picNik !== '' && picNik === userNik) || 
-                               (picNama !== '' && picNama.includes(userNama)) || 
-                               (pmbNik !== '' && pmbNik === userNik);
-                    });
-                }
+                    return matchDiv || matchDept;
+                });
             }
 
             if (filterDivisi !== 'all') {
@@ -877,7 +867,7 @@
 
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">Belum ada data tugas untuk ditampilkan pada filter ini.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500 font-bold">Tidak ada tugas dalam wewenang divisi Anda.</td></tr>`;
                 return;
             }
 
@@ -891,7 +881,7 @@
                 const pemberi = resolvePemberiNama(t);
                 const penerima = getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama', 'PIC_NIK', 'picNik']);
                 
-                const targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']) || 'SDM, Umum, & TI';
+                const targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']) || '-';
                 const targetDept = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']);
                 const divisiDeptFormatted = `${targetDiv} / ${targetDept}`;
 
