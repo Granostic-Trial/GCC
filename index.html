@@ -99,7 +99,6 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- DROPDOWN NOTIFIKASI LONCENG -->
                 <div class="relative">
                     <button onclick="toggleNotifDropdown(event)" class="relative bg-cardBg border border-borderDark p-2 rounded-xl text-amber-400 hover:text-amber-300 transition flex items-center justify-center" title="Notifikasi Tugas">
                         <i data-lucide="bell" class="w-4 h-4"></i>
@@ -271,10 +270,22 @@
 
                     <div id="field-frekuensi" class="hidden">
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
+                        <!-- FOKUS PERBAIKAN: DAFTAR FREKUENSI LENGKAP -->
                         <select id="task-frekuensi" onchange="handleFrekuensiChange()" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
                             <option value="Harian">Harian</option>
+                            <option value="2 Harian">2 Harian</option>
+                            <option value="3 Harian">3 Harian</option>
+                            <option value="4 Harian">4 Harian</option>
+                            <option value="5 Harian">5 Harian</option>
+                            <option value="6 Harian">6 Harian</option>
                             <option value="Mingguan">Mingguan</option>
+                            <option value="2 Mingguan">2 Mingguan</option>
+                            <option value="3 Mingguan">3 Mingguan</option>
                             <option value="Bulanan">Bulanan</option>
+                            <option value="2 Bulanan">2 Bulanan</option>
+                            <option value="3 Bulanan">3 Bulanan</option>
+                            <option value="4 Bulanan">4 Bulanan</option>
+                            <option value="6 Bulanan">6 Bulanan</option>
                             <option value="Tahunan">Tahunan</option>
                         </select>
                     </div>
@@ -551,7 +562,6 @@
             updateDeptOptions();
         }
 
-        // FUNGSI 1: KUNCI DEPARTEMEN AGAR PRESISI DENGAN DIVISI TERPILIH
         function updateDeptOptions() {
             const selectedDivisi = cleanString(document.getElementById('task-divisi-target').value);
             const taskDeptSelect = document.getElementById('task-dept-target');
@@ -575,8 +585,9 @@
             updatePICOptions();
         }
 
-        // FUNGSI 2: KUNCI PIC AGAR 100% PERSIS DI DEPARTEMEN & CEGAH MFT TUGASKAN DPS
+        // FOKUS PERBAIKAN: MEMASUKKAN MANAJER DIVISI KE DALAM DROPDOWN BERSAMA STAF DEPT
         function updatePICOptions() {
+            const selectedDivisi = cleanString(document.getElementById('task-divisi-target').value);
             const selectedDept = cleanString(document.getElementById('task-dept-target').value);
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
@@ -590,11 +601,17 @@
                 const uMatchRank = String(u.id_jabatan || '').match(/\d+/);
                 const uRankNum = uMatchRank ? parseInt(uMatchRank[0], 10) : (u.jabatan === 'Direktur Utama' ? 1 : 99);
 
-                // MFT (Rank 2) TIDAK BISA menugaskan DPS (Rank 1)
+                // Atasan (MFT/DPS) tidak bisa saling tugaskan ke atas
                 if (myRankNum > uRankNum) return false; 
 
-                // PIC Wajib anggota persis di Departemen terpilih
-                return cleanString(u.dept) === selectedDept;
+                // 1. Munculkan staf yang persis berada di Departemen (misal Mikrobiologi)
+                const isExactDeptMember = cleanString(u.dept) === selectedDept;
+
+                // 2. Munculkan juga Manajer yang mengawasi Divisi tersebut (misal AHW mengawasi Laboratorium)
+                const uDivs = (u.divisiList || [u.dept]).map(cleanString);
+                const isDivisiManager = uDivs.includes(selectedDivisi) && (cleanString(u.level).includes('manajer') || cleanString(u.jabatan).includes('manajer'));
+
+                return isExactDeptMember || isDivisiManager;
             });
 
             if (filteredPegawai.length === 0) {
@@ -735,7 +752,6 @@
             return 'DPS';
         }
 
-        // FUNGSI 3: DASHBOARD MANAJER TERISOLASI TAPI TETAP BISA MELIHAT BAWAHANNYA!
         function renderDashboard() {
             let viewable = tasksData;
 
@@ -758,12 +774,10 @@
                     const tDiv = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi', 'Divisi']));
                     const tDept = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
 
-                    // 1. Tugas milik user sendiri
                     if ((picNik !== '' && picNik === userNik) || (pmbNik !== '' && pmbNik === userNik) || (picNama !== '' && picNama.includes(userNama))) {
                         return true;
                     }
 
-                    // 2. DCH bisa melihat tugas SDM, Umum, & TI (Milik FAG). AHW terblokir dari SDM/TI.
                     const matchDiv = myDivs.some(md => md !== '' && (tDiv.includes(md) || md.includes(tDiv) || tDept.includes(md) || md.includes(tDept)));
                     return matchDiv;
                 });
@@ -794,7 +808,6 @@
                 });
             }
 
-            // HITUNG NOTIFIKASI
             const myReceivedTasks = tasksData.filter(t => {
                 const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik']));
                 const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama']));
@@ -975,13 +988,25 @@
             }
         }
 
+        // FOKUS PERBAIKAN: KALENDER HISTORI LOOPING BERDASARKAN SEMUA JENIS FREKUENSI 
         function calculateAutoTargetDate(startDateStr, freq) {
             if (!startDateStr) return '';
             let d = new Date(startDateStr);
-            if (freq === 'Harian') d.setDate(d.getDate() + 0);
-            else if (freq === 'Mingguan') d.setDate(d.getDate() + 7);
-            else if (freq === 'Bulanan') d.setMonth(d.getMonth() + 1);
-            else if (freq === 'Tahunan') d.setFullYear(d.getFullYear() + 1);
+            
+            const match = freq.match(/\d+/);
+            const multiplier = match ? parseInt(match[0], 10) : 1;
+            const f = freq.toLowerCase();
+
+            if (f.includes('harian')) {
+                if (f === 'harian') d.setDate(d.getDate() + 0);
+                else d.setDate(d.getDate() + multiplier);
+            } else if (f.includes('mingguan')) {
+                d.setDate(d.getDate() + (7 * multiplier));
+            } else if (f.includes('bulanan')) {
+                d.setMonth(d.getMonth() + multiplier);
+            } else if (f.includes('tahunan')) {
+                d.setFullYear(d.getFullYear() + multiplier);
+            }
             return d.toISOString().split('T')[0];
         }
 
