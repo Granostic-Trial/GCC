@@ -331,7 +331,6 @@
                     <p id="update-task-title" class="font-extrabold text-white bg-cardBg p-3 rounded-xl border border-borderDark text-sm"></p>
                 </div>
 
-                <!-- TOMBOL STATUS EKSPLISIT -->
                 <div class="bg-cardBg/80 p-3 rounded-xl border border-borderDark space-y-1.5">
                     <label class="block font-bold text-gray-300 uppercase text-[10px] tracking-wider">Pilih Status Laporan Tugas:</label>
                     <div class="grid grid-cols-3 gap-2">
@@ -363,7 +362,6 @@
                     <textarea id="update-catatan" rows="2" placeholder="Tuliskan perkembangan tugas, kendala, atau revisi..." class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none"></textarea>
                 </div>
 
-                <!-- RIWAYAT DOKUMEN LAMPIRAN TERDAHULU -->
                 <div id="existing-doc-container" class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
                         <i data-lucide="paperclip" class="w-3.5 h-3.5"></i> Riwayat Dokumen Lampiran Tugas Ini:
@@ -372,7 +370,6 @@
                     </div>
                 </div>
 
-                <!-- RIWAYAT CATATAN & FEEDBACK -->
                 <div class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <label class="block font-bold text-amber-400 flex items-center gap-1.5 text-xs">
                         <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Histori Feedback & Catatan Laporan:
@@ -498,7 +495,7 @@
         }
 
         // =========================================================================
-        // HAK AKSES DAN CASCADING INPUT TUGAS SESUAI MASTER HIREARKI MUTLAK
+        // DROPDOWN CASCADING SANGAT KETAT SESUAI MASTER HIREARKI & DEPARTEMEN
         // =========================================================================
         function setupMasterDataUI() {
             const isSuperAdminOrDireksi = (
@@ -555,23 +552,30 @@
             const taskDeptSelect = document.getElementById('task-dept-target');
             taskDeptSelect.innerHTML = '';
 
-            // Cari Departemen yang HANYA terdaftar di bawah Divisi yang dipilih pada Master Hirearki
-            const deptsInDivisi = [...new Set(
-                masterHirearki
-                    .filter(h => String(h.Divisi || h.divisi || '').trim() === selectedDivisi)
-                    .map(h => String(h.Departemen || h.departemen || '').trim())
-                    .filter(Boolean)
-            )];
+            const userLevelLower = cleanString(currentUser.level);
+            const isSuperAdminOrDireksi = cleanString(currentUser.role).includes('admin') || userLevelLower.includes('direksi');
+            const isManager = userLevelLower.includes('manajer') || userLevelLower.includes('manager');
 
-            if (deptsInDivisi.length === 0) {
-                taskDeptSelect.innerHTML = `<option value="${selectedDivisi}">${selectedDivisi}</option>`;
+            if (isSuperAdminOrDireksi || isManager) {
+                // Manajer (DCH) / Direksi: Bisa pilih Dept di bawah divisinya
+                const deptsInDivisi = [...new Set(
+                    masterHirearki
+                        .filter(h => String(h.Divisi || h.divisi || '').trim() === selectedDivisi)
+                        .map(h => String(h.Departemen || h.departemen || '').trim())
+                        .filter(Boolean)
+                )];
+
+                if (deptsInDivisi.length === 0) {
+                    taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
+                } else {
+                    deptsInDivisi.forEach(d => {
+                        if (!isSuperAdminOrDireksi && cleanString(d).includes('direksi')) return;
+                        taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                    });
+                }
             } else {
-                deptsInDivisi.forEach(d => {
-                    if (!cleanString(currentUser.level).includes('direksi') && cleanString(d).includes('direksi')) {
-                        return;
-                    }
-                    taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
-                });
+                // Pengawas / Staff (FAG): KUNCI TOTAL HANYA BISA KANALLKAN KE DEPT SENDIRI (OPERASIONAL UMUM)
+                taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
             }
 
             updatePICOptions();
@@ -584,20 +588,26 @@
 
             const userLevelLower = cleanString(currentUser.level);
 
-            // PIC HANYA BOLEH KARYAWAN YANG TERDAFTAR DI DEPARTEMEN TARGET TERSEBUT (DARI MASTER DATABASE)
+            // PIC Penerima HANYA Anggota di Dept Target
             const filteredPegawai = masterUsers.filter(u => {
-                const isSameDept = cleanString(u.dept) === cleanString(selectedDept);
-                if (!isSameDept) return false;
+                if (cleanString(u.dept) !== cleanString(selectedDept)) return false;
 
                 if (cleanString(u.nik) === cleanString(currentUser.nik)) return false;
 
-                if (!userLevelLower.includes('direksi') && cleanString(u.level).includes('direksi')) return false;
+                if (!userLevelLower.includes('direksi') && (cleanString(u.level).includes('direksi') || cleanString(u.jabatan).includes('direktur'))) return false;
+
+                // FAG (Staff/Pengawas) TIDAK BOLEH MEMILIH DCH (Manajer) KARENA MANAJER ADALAH ATASAN
+                if (!userLevelLower.includes('direksi') && !userLevelLower.includes('manajer') && !userLevelLower.includes('manager')) {
+                    if (cleanString(u.level).includes('manajer') || cleanString(u.level).includes('manager') || cleanString(u.jabatan).includes('manajer')) {
+                        return false;
+                    }
+                }
 
                 return true;
             });
 
             if (filteredPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada anggota/bawahan di Dept ${selectedDept}</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada bawahan di Dept ${selectedDept}</option>`;
                 return;
             }
 
@@ -930,7 +940,7 @@
         }
 
         // =========================================================================
-        // LOGIKA RENDER DASHBOARD PRESISI HIERARKI
+        // LOGIKA RENDER DASHBOARD PRESISI HIERARKI (SUPPORT THOUSANDS OF ROWS)
         // =========================================================================
         function renderDashboard() {
             let viewable = tasksData;
