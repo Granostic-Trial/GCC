@@ -88,6 +88,7 @@
             </div>
 
             <div class="flex items-center gap-3">
+                <!-- DROPDOWN NOTIFIKASI LONCENG TERHUBUNG -->
                 <div class="relative">
                     <button onclick="toggleNotifDropdown(event)" class="relative bg-cardBg border border-borderDark p-2 rounded-xl text-amber-400 hover:text-amber-300 transition flex items-center justify-center" title="Notifikasi Tugas">
                         <i data-lucide="bell" class="w-4 h-4"></i>
@@ -210,17 +211,19 @@
         </main>
     </div>
 
-    <!-- MODAL INPUT TUGAS BARU -->
+    <!-- MODAL INPUT TUGAS / UBAH TUGAS (NON-DESTRUKTIF) -->
     <div id="modal-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto relative">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
-                <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                <h3 id="modal-task-title-ui" class="font-bold text-sm text-white flex items-center gap-2">
                     <i data-lucide="plus-circle" class="w-4 h-4 text-brandPurple"></i> Form Input Tugas / Project
                 </h3>
-                <button onclick="document.getElementById('modal-task').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
+                <button onclick="closeTaskModal()" class="text-gray-400 hover:text-white">✕</button>
             </div>
 
-            <form onsubmit="handleSaveTask(event)" class="space-y-3 text-xs">
+            <form onsubmit="handleSaveOrEditTask(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="task-id-edit" value="">
+                
                 <div>
                     <label class="block font-semibold text-gray-300 mb-1">Judul Pekerjaan</label>
                     <input type="text" id="task-title" required placeholder="Contoh: Renovasi Gedung / Laporan Bulanan" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
@@ -241,7 +244,7 @@
                     </div>
                     <div>
                         <label class="block font-semibold text-emerald-400 mb-1">3. PIC Penerima (Nama - NIK & Jabatan):</label>
-                        <select id="task-pic-target" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
+                        <select id="task-pic-target" required class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
                         </select>
                     </div>
                 </div>
@@ -257,21 +260,10 @@
 
                     <div id="field-frekuensi" class="hidden">
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
-                        <select id="task-frekuensi" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
+                        <select id="task-frekuensi" onchange="handleFrekuensiChange()" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
                             <option value="Harian">Harian</option>
-                            <option value="2 Harian">2 Harian</option>
-                            <option value="3 Harian">3 Harian</option>
-                            <option value="4 Harian">4 Harian</option>
-                            <option value="5 Harian">5 Harian</option>
-                            <option value="6 Harian">6 Harian</option>
                             <option value="Mingguan">Mingguan</option>
-                            <option value="2 Mingguan">2 Mingguan</option>
-                            <option value="3 Mingguan">3 Mingguan</option>
                             <option value="Bulanan">Bulanan</option>
-                            <option value="2 Bulanan">2 Bulanan (Dwi Bulanan)</option>
-                            <option value="3 Bulanan">3 Bulanan (Triwulan)</option>
-                            <option value="4 Bulanan">4 Bulanan (Caturwulan)</option>
-                            <option value="6 Bulanan">6 Bulanan (Semesteran)</option>
                             <option value="Tahunan">Tahunan</option>
                         </select>
                     </div>
@@ -282,9 +274,9 @@
                         <label class="block font-semibold text-gray-300 mb-1">Tanggal Mulai</label>
                         <input type="date" id="task-start" required class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
                     </div>
-                    <div>
-                        <label class="block font-semibold text-gray-300 mb-1">Tanggal Target</label>
-                        <input type="date" id="task-end" required class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
+                    <div id="wrapper-task-end">
+                        <label class="block font-semibold text-gray-300 mb-1">Tanggal Target (Otomatis jika Rutin)</label>
+                        <input type="date" id="task-end" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
                     </div>
                 </div>
 
@@ -295,31 +287,37 @@
                     </div>
                     <div>
                         <label class="block font-semibold text-amber-400 mb-1">Early Warning (Hari)</label>
-                        <input type="number" id="task-early" value="3" min="0" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
+                        <input type="number" id="task-early" required value="3" min="0" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
                     </div>
                 </div>
 
-                <div>
+                <div id="wrapper-catatan-baru">
                     <label class="block font-semibold text-gray-300 mb-1">Catatan Bebas / Instruksi Khusus</label>
                     <textarea id="task-catatan" rows="2" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none" placeholder="Tuliskan instruksi pekerjaan secara detail..."></textarea>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2 border-t border-borderDark">
-                    <button type="button" onclick="document.getElementById('modal-task').classList.add('hidden')" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-brandPurple text-white rounded-xl font-bold shadow">Simpan & Berikan Tugas</button>
+                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
+                    <button type="submit" id="btn-save-task" class="px-4 py-2 bg-brandPurple text-white rounded-xl font-bold shadow">Simpan Tugas</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL UPDATE PROGRESS, FEEDBACK HISTORI, & UPLOAD DOKUMEN PEKERJAAN -->
+    <!-- MODAL UPDATE PROGRESS, FEEDBACK HISTORI, & DOKUMEN LAMPIRAN -->
     <div id="modal-update-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto relative">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
                 <h3 class="font-bold text-sm text-white flex items-center gap-2">
                     <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Detail Tugas, Feedback & Report Dokumen
                 </h3>
-                <button onclick="document.getElementById('modal-update-task').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
+                <div class="flex items-center gap-2">
+                    <!-- TOMBOL UBAH TUGAS (POINT 5) -->
+                    <button id="btn-edit-mode" onclick="openEditTaskModalFromDetail()" class="text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-xl shadow font-bold flex items-center gap-1 transition">
+                        <i data-lucide="edit-3" class="w-3 h-3"></i> Ubah Detail Tugas
+                    </button>
+                    <button onclick="document.getElementById('modal-update-task').classList.add('hidden')" class="text-gray-400 hover:text-white ml-2">✕</button>
+                </div>
             </div>
 
             <form onsubmit="handleSaveTaskUpdate(event)" class="space-y-4 text-xs">
@@ -362,6 +360,7 @@
                     <textarea id="update-catatan" rows="2" placeholder="Tuliskan perkembangan tugas, kendala, atau revisi..." class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none"></textarea>
                 </div>
 
+                <!-- RIWAYAT DOKUMEN LAMPIRAN TERDAHULU (TERHUBUNG KEMBALI) -->
                 <div id="existing-doc-container" class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
                         <i data-lucide="paperclip" class="w-3.5 h-3.5"></i> Riwayat Dokumen Lampiran Tugas Ini:
@@ -370,6 +369,16 @@
                     </div>
                 </div>
 
+                <!-- RIWAYAT RUTIN (MAKS 2 BULAN) - POINT 2 -->
+                <div id="routine-history-container" class="hidden space-y-1.5 bg-indigo-950/20 p-3 rounded-xl border border-indigo-500/30">
+                    <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Histori Pengerjaan Rutin (2 Bulan Terakhir):
+                    </label>
+                    <div id="routine-history-list" class="space-y-1 max-h-32 overflow-y-auto">
+                    </div>
+                </div>
+
+                <!-- RIWAYAT CATATAN & FEEDBACK -->
                 <div class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <label class="block font-bold text-amber-400 flex items-center gap-1.5 text-xs">
                         <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Histori Feedback & Catatan Laporan:
@@ -388,7 +397,7 @@
         </div>
     </div>
 
-    <!-- MODAL UBAH PASSWORD -->
+    <!-- MODAL UBAH PASSWORD (TERHUBUNG KEMBALI) -->
     <div id="modal-changepass" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-md p-6 space-y-4">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -436,12 +445,8 @@
             for (let key of keys) {
                 const targetClean = key.toLowerCase().replace(/[^a-z0-9]/g, '');
                 for (let actualKey of objKeys) {
-                    const actualClean = actualKey.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    if (actualClean === targetClean) {
-                        const val = obj[actualKey];
-                        if (val !== undefined && val !== null) {
-                            return String(val).trim();
-                        }
+                    if (actualKey.toLowerCase().replace(/[^a-z0-9]/g, '') === targetClean) {
+                        return obj[actualKey] !== undefined ? String(obj[actualKey]).trim() : '';
                     }
                 }
             }
@@ -494,123 +499,102 @@
             }
         }
 
+        function isUserSuperAdminOrDireksi() {
+            const level = cleanString(currentUser.level);
+            return cleanString(currentUser.role).includes('admin') || level.includes('direksi') || cleanString(currentUser.dept).includes('direksi');
+        }
+
         // =========================================================================
-        // DROPDOWN CASCADING SANGAT KETAT SESUAI MASTER HIREARKI & DEPARTEMEN
+        // HIERARKI KETAT UNTUK AHW, MFT, DCH, FAG (MENCEGAH KEBOCORAN DIVISI/ATASAN)
         // =========================================================================
         function setupMasterDataUI() {
-            const isSuperAdminOrDireksi = (
-                cleanString(currentUser.role).includes('admin') || 
-                cleanString(currentUser.level).includes('direksi') || 
-                cleanString(currentUser.dept).includes('direksi')
-            );
-
+            const isSAD = isUserSuperAdminOrDireksi();
             const allDivisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
             
-            // 1. HEADER FILTER DIVISI
+            // 1. Header Filter Divisi
             const headerDivisiSelect = document.getElementById('filter-divisi-header');
-            headerDivisiSelect.innerHTML = '';
+            headerDivisiSelect.innerHTML = isSAD ? `<option value="ALL">🏛️ Semua Divisi (Global)</option>` : `<option value="ALL">🏛️ Divisi Saya</option>`;
+            
+            (isSAD ? allDivisiList : currentUser.divisiList).forEach(d => {
+                headerDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
+            });
 
-            if (isSuperAdminOrDireksi) {
-                headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
-                allDivisiList.forEach(d => {
-                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
-                });
-            } else {
-                const userDivs = currentUser.divisiList || [currentUser.dept];
-                headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Divisi Saya (${userDivs.join(', ')})</option>`;
-                userDivs.forEach(d => {
-                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
-                });
-            }
-
-            // 2. DROPDOWN DIVISI TARGET PADA MODAL INPUT TUGAS
+            // 2. Modal Form Divisi Target
             const taskDivisiSelect = document.getElementById('task-divisi-target');
             taskDivisiSelect.innerHTML = '';
-
-            if (isSuperAdminOrDireksi) {
-                allDivisiList.forEach(d => {
-                    taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
-                });
+            
+            if (isSAD) {
+                allDivisiList.forEach(d => taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`);
             } else {
-                const userDivs = (currentUser.divisiList || [currentUser.dept]);
-                userDivs.forEach(d => {
+                // HAPUS OPSI DIREKSI UNTUK NON-DIREKSI (Spt MFT)
+                currentUser.divisiList.forEach(d => {
                     if (!cleanString(d).includes('direksi')) {
                         taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
                     }
                 });
-
                 if (taskDivisiSelect.options.length === 0) {
                     taskDivisiSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
                 }
             }
-
             updateDeptOptions();
         }
 
         function updateDeptOptions() {
-            const selectedDivisi = document.getElementById('task-divisi-target').value;
+            const selDiv = document.getElementById('task-divisi-target').value;
             const taskDeptSelect = document.getElementById('task-dept-target');
             taskDeptSelect.innerHTML = '';
+            
+            const isSAD = isUserSuperAdminOrDireksi();
+            const level = cleanString(currentUser.level);
+            const isManajer = level.includes('manajer') || level.includes('manager');
 
-            const userLevelLower = cleanString(currentUser.level);
-            const isSuperAdminOrDireksi = cleanString(currentUser.role).includes('admin') || userLevelLower.includes('direksi');
-            const isManager = userLevelLower.includes('manajer') || userLevelLower.includes('manager');
-
-            if (isSuperAdminOrDireksi || isManager) {
-                // Manajer (DCH) / Direksi: Bisa pilih Dept di bawah divisinya
+            if (isSAD || isManajer) {
                 const deptsInDivisi = [...new Set(
                     masterHirearki
-                        .filter(h => String(h.Divisi || h.divisi || '').trim() === selectedDivisi)
+                        .filter(h => String(h.Divisi || h.divisi || '').trim() === selDiv)
                         .map(h => String(h.Departemen || h.departemen || '').trim())
                         .filter(Boolean)
                 )];
-
-                if (deptsInDivisi.length === 0) {
+                
+                deptsInDivisi.forEach(d => {
+                    if (!isSAD && cleanString(d).includes('direksi')) return; // Non-Direksi dilarang memilih Dept Direksi
+                    taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                });
+                if (taskDeptSelect.options.length === 0) {
                     taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
-                } else {
-                    deptsInDivisi.forEach(d => {
-                        if (!isSuperAdminOrDireksi && cleanString(d).includes('direksi')) return;
-                        taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
-                    });
                 }
             } else {
-                // Pengawas / Staff (FAG): KUNCI TOTAL HANYA BISA KANALLKAN KE DEPT SENDIRI (OPERASIONAL UMUM)
+                // Staff/Pengawas dilarang lintas departemen
                 taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
             }
-
             updatePICOptions();
         }
 
         function updatePICOptions() {
-            const selectedDept = document.getElementById('task-dept-target').value;
+            const selDept = document.getElementById('task-dept-target').value;
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
+            
+            const level = cleanString(currentUser.level);
+            const isSAD = isUserSuperAdminOrDireksi();
+            const isManajer = level.includes('manajer') || level.includes('manager');
 
-            const userLevelLower = cleanString(currentUser.level);
-
-            // PIC Penerima HANYA Anggota di Dept Target
             const filteredPegawai = masterUsers.filter(u => {
-                if (cleanString(u.dept) !== cleanString(selectedDept)) return false;
-
+                if (cleanString(u.dept) !== cleanString(selDept)) return false;
                 if (cleanString(u.nik) === cleanString(currentUser.nik)) return false;
-
-                if (!userLevelLower.includes('direksi') && (cleanString(u.level).includes('direksi') || cleanString(u.jabatan).includes('direktur'))) return false;
-
-                // FAG (Staff/Pengawas) TIDAK BOLEH MEMILIH DCH (Manajer) KARENA MANAJER ADALAH ATASAN
-                if (!userLevelLower.includes('direksi') && !userLevelLower.includes('manajer') && !userLevelLower.includes('manager')) {
-                    if (cleanString(u.level).includes('manajer') || cleanString(u.level).includes('manager') || cleanString(u.jabatan).includes('manajer')) {
-                        return false;
-                    }
-                }
-
+                
+                const uLevel = cleanString(u.level);
+                // Blokir atasan (Direksi)
+                if (!isSAD && (uLevel.includes('direksi') || cleanString(u.jabatan).includes('direktur'))) return false;
+                // Blokir atasan (Manajer) jika yang login adalah staff/pengawas
+                if (!isSAD && !isManajer && (uLevel.includes('manajer') || uLevel.includes('manager'))) return false;
                 return true;
             });
 
             if (filteredPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada bawahan di Dept ${selectedDept}</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada bawahan/rekan yang sah di Dept ${selDept}</option>`;
                 return;
             }
-
             filteredPegawai.forEach(p => {
                 picSelect.innerHTML += `<option value="${p.nama} - ${p.nik}">${p.nama} - ${p.nik} (${p.jabatan})</option>`;
             });
@@ -653,13 +637,12 @@
                 const res = await response.json();
 
                 if (res.status === 'success') {
-                    alert('Sandi berhasil diperbarui di Google Sheets!');
+                    alert('Sandi berhasil diperbarui!');
                     document.getElementById('modal-changepass').classList.add('hidden');
                 } else {
                     alert('Gagal mengubah sandi: ' + res.message);
                 }
             } catch (err) {
-                console.error(err);
                 alert('Terjadi kesalahan koneksi!');
             } finally {
                 btn.disabled = false;
@@ -688,201 +671,6 @@
                 }
             } catch (err) {
                 console.error('Error Sync:', err);
-            }
-        }
-
-        function toggleJenisTugasField() {
-            const jenis = document.getElementById('task-jenis').value;
-            const freqField = document.getElementById('field-frekuensi');
-            if (jenis === 'Rutin') freqField.classList.remove('hidden');
-            else freqField.classList.add('hidden');
-        }
-
-        function openTaskModal() {
-            document.getElementById('modal-task').classList.remove('hidden');
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('task-start').value = today;
-            document.getElementById('task-end').value = today;
-            setupMasterDataUI();
-        }
-
-        async function handleSaveTask(e) {
-            e.preventDefault();
-            const selectedPic = document.getElementById('task-pic-target').value;
-            const targetDivisiVal = document.getElementById('task-divisi-target').value;
-            const targetDeptVal = document.getElementById('task-dept-target').value;
-            const jenisTugasVal = document.getElementById('task-jenis').value;
-            const frekuensiVal = jenisTugasVal === 'Rutin' ? document.getElementById('task-frekuensi').value : '-';
-            
-            const picNamaVal = selectedPic.split(' - ')[0] || selectedPic;
-            const picNikVal = selectedPic.split(' - ')[1] ? selectedPic.split(' - ')[1].split(' ')[0] : '';
-
-            const newTask = {
-                id: 'TSK-' + Date.now().toString().slice(-5),
-                jenisTugas: jenisTugasVal,
-                judul: document.getElementById('task-title').value,
-                frekuensi: frekuensiVal,
-                divisiTarget: targetDivisiVal,
-                deptTarget: targetDeptVal,
-                tanggalMulai: document.getElementById('task-start').value,
-                tanggalTarget: document.getElementById('task-end').value,
-                lateWarningHari: document.getElementById('task-late').value,
-                earlyWarningHari: document.getElementById('task-early').value,
-                catatanBebas: document.getElementById('task-catatan').value,
-                status: 'In Progress',
-                progress: 0,
-                picNik: picNikVal,
-                picNama: picNamaVal,
-                pemberiNik: currentUser.nik,
-                pemberiNama: currentUser.nama
-            };
-
-            tasksData.push(newTask);
-            document.getElementById('modal-task').classList.add('hidden');
-            renderDashboard();
-
-            await fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    action: 'addTask', 
-                    payload: newTask,
-                    actorNik: currentUser.nik,
-                    actorNama: currentUser.nama,
-                    actorDept: currentUser.dept
-                })
-            });
-        }
-
-        function selectTaskStatus(status) {
-            document.getElementById('selected-status-btn').value = status;
-            
-            const btnProg = document.getElementById('btn-status-progress');
-            const btnDone = document.getElementById('btn-status-selesai');
-            const btnOver = document.getElementById('btn-status-overdue');
-
-            btnProg.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
-            btnDone.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
-            btnOver.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
-
-            if (status === 'In Progress') {
-                btnProg.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-indigo-600/30 border-indigo-500 text-indigo-300 shadow";
-            } else if (status === 'Selesai') {
-                btnDone.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-emerald-600/30 border-emerald-500 text-emerald-300 shadow";
-                document.getElementById('update-progress').value = 100;
-            } else if (status === 'Overdue') {
-                btnOver.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-rose-600/30 border-rose-500 text-rose-300 shadow";
-            }
-        }
-
-        function openUpdateTaskModal(id) {
-            const t = tasksData.find(x => getProp(x, ['TaskID', 'id', 'ID']) === String(id));
-            if (!t) return;
-
-            document.getElementById('update-task-id').value = id;
-            document.getElementById('update-task-title').innerText = `${id} - ${getProp(t, ['Judul', 'judul'])}`;
-            document.getElementById('update-progress').value = getProp(t, ['Progress', 'progress']) || 0;
-            document.getElementById('update-catatan').value = '';
-            document.getElementById('update-file').value = '';
-
-            const currentStatus = getProp(t, ['Status', 'status']) || 'In Progress';
-            selectTaskStatus(currentStatus);
-
-            const existingDocRaw = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
-            const docListElem = document.getElementById('existing-doc-list');
-            docListElem.innerHTML = '';
-
-            if (existingDocRaw) {
-                const urls = existingDocRaw.split(',').filter(u => u.trim().startsWith('http'));
-                if (urls.length > 0) {
-                    urls.forEach((u, idx) => {
-                        docListElem.innerHTML += `
-                            <div class="flex items-center justify-between text-[11px] bg-panelBg p-1.5 px-2.5 rounded-lg border border-borderDark">
-                                <span class="text-gray-300 font-medium">📄 Dokumen Lampiran #${idx + 1}</span>
-                                <a href="${u.trim()}" target="_blank" class="text-brandPurple font-bold hover:underline flex items-center gap-1">
-                                    Buka File <i data-lucide="external-link" class="w-3 h-3"></i>
-                                </a>
-                            </div>
-                        `;
-                    });
-                } else {
-                    docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
-                }
-            } else {
-                docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
-            }
-
-            const feedbackHistory = getProp(t, ['Catatan', 'catatan', 'CatatanBebas']);
-            const feedbackElem = document.getElementById('feedback-history-list');
-            feedbackElem.innerText = feedbackHistory || 'Belum ada catatan histori.';
-
-            lucide.createIcons();
-            document.getElementById('modal-update-task').classList.remove('hidden');
-        }
-
-        async function handleSaveTaskUpdate(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-save-update');
-            btn.disabled = true;
-            btn.innerText = 'MENYIMPAN PROGRESS & UPLOADING...';
-
-            const taskId = document.getElementById('update-task-id').value;
-            const progress = document.getElementById('update-progress').value;
-            const status = document.getElementById('selected-status-btn').value;
-            const catatan = document.getElementById('update-catatan').value;
-            const fileInput = document.getElementById('update-file');
-
-            let fileData = null, fileName = '', fileType = '';
-
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Ukuran file maksimal adalah 5MB!');
-                    btn.disabled = false;
-                    btn.innerText = 'SIMPAN PROGRESS & FEEDBACK';
-                    return;
-                }
-
-                fileName = file.name;
-                fileType = file.type;
-                fileData = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.readAsDataURL(file);
-                });
-            }
-
-            try {
-                const response = await fetch(GAS_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'updateTask',
-                        taskId: taskId,
-                        progress: progress,
-                        status: status,
-                        catatan: catatan,
-                        fileData: fileData,
-                        fileName: fileName,
-                        fileType: fileType,
-                        actorNik: currentUser.nik,
-                        actorNama: currentUser.nama,
-                        actorDept: currentUser.dept
-                    })
-                });
-
-                const res = await response.json();
-                if (res.status === 'success') {
-                    alert('Progress, Feedback, & Dokumen Lampiran berhasil disimpan!');
-                    document.getElementById('modal-update-task').classList.add('hidden');
-                    fetchDataFromGAS();
-                } else {
-                    alert('Gagal update: ' + res.message);
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Terjadi kesalahan saat upload!');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'SIMPAN PROGRESS & FEEDBACK';
             }
         }
 
@@ -939,30 +727,24 @@
             return 'DPS';
         }
 
-        // =========================================================================
-        // LOGIKA RENDER DASHBOARD PRESISI HIERARKI (SUPPORT THOUSANDS OF ROWS)
-        // =========================================================================
         function renderDashboard() {
             let viewable = tasksData;
 
-            const filterDivisi = document.getElementById('filter-divisi-header')?.value || 'ALL';
-            const filterJenis = document.getElementById('filter-jenis-header')?.value || 'ALL';
-            const filterStatus = document.getElementById('filter-status-header')?.value || 'ALL';
+            const filterDivisi = cleanString(document.getElementById('filter-divisi-header')?.value || 'ALL');
+            const filterJenis = cleanString(document.getElementById('filter-jenis-header')?.value || 'ALL');
+            const filterStatus = cleanString(document.getElementById('filter-status-header')?.value || 'ALL');
 
             const userLevel = cleanString(currentUser.level);
             const userNik = cleanString(currentUser.nik);
             const userNama = cleanString(currentUser.nama);
-            const userDept = cleanString(currentUser.dept);
             
-            const isSuperAdminOrDireksi = (cleanString(currentUser.role).includes('admin') || userLevel.includes('direksi') || userDept.includes('direksi'));
+            const isSAD = isUserSuperAdminOrDireksi();
             const isManager = userLevel.includes('manajer') || userLevel.includes('manager');
 
-            // HIERARKI AKSES TUGAS
-            if (!isSuperAdminOrDireksi) {
+            // HIERARKI AKSES TUGAS (AHW HANYA LIHAT MEDIS/KLINIK)
+            if (!isSAD) {
                 if (isManager) {
-                    // MANAJER (DCH): Melihat tugas miliknya sendiri + Seluruh tugas BAWAHAN di Divisinya (Termasuk FAG)
-                    const userDivs = (currentUser.divisiList || [currentUser.dept]).map(d => cleanString(d));
-                    
+                    const userDivs = (currentUser.divisiList || [currentUser.dept]).map(cleanString);
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
                         const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
@@ -971,55 +753,48 @@
                         const divisiTarget = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']));
 
                         const isMine = (picNik === userNik) || (pemberiNik === userNik) || (picNama.includes(userNama));
-                        
                         const isTargetUnderMyDiv = userDivs.some(ud => 
                             divisiTarget.includes(ud) || ud.includes(divisiTarget) || 
-                            deptTarget.includes(ud) || ud.includes(deptTarget) ||
-                            userDept.includes(deptTarget)
+                            deptTarget.includes(ud) || ud.includes(deptTarget)
                         );
 
                         return isMine || isTargetUnderMyDiv;
                     });
                 } else {
-                    // PENGAWAS / STAFF (FAG): HANYA BISA LIHAT TUGAS MILIKNYA SENDIRI
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
                         const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
                         const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
 
-                        const isPicMatch = (picNik !== '' && picNik === userNik) || (picNama !== '' && (picNama.includes(userNama) || userNama.includes(picNama)));
-                        const isPemberiMatch = (pemberiNik !== '' && pemberiNik === userNik);
-
-                        return isPicMatch || isPemberiMatch;
+                        return (picNik !== '' && picNik === userNik) || (picNama !== '' && picNama.includes(userNama)) || (pemberiNik !== '' && pemberiNik === userNik);
                     });
                 }
             }
 
-            // FILTER DIVISI HEADER
-            if (filterDivisi !== 'ALL') {
-                const fDivLower = cleanString(filterDivisi);
+            // FILTER DIVISI
+            if (filterDivisi !== 'all') {
                 viewable = viewable.filter(t => {
                     const deptTarget = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
                     const divisiTarget = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']));
-                    return deptTarget.includes(fDivLower) || divisiTarget.includes(fDivLower) || fDivLower.includes(deptTarget);
+                    return deptTarget.includes(filterDivisi) || divisiTarget.includes(filterDivisi) || filterDivisi.includes(deptTarget);
                 });
             }
 
-            // FILTER JENIS TUGAS
-            if (filterJenis !== 'ALL') {
+            // FILTER JENIS
+            if (filterJenis !== 'all') {
                 viewable = viewable.filter(t => {
                     const jenis = cleanString(getProp(t, ['JenisTugas', 'jenisTugas']));
-                    return jenis.includes(cleanString(filterJenis));
+                    return jenis.includes(filterJenis);
                 });
             }
 
-            // FILTER STATUS TUGAS
-            if (filterStatus !== 'ALL') {
+            // FILTER STATUS
+            if (filterStatus !== 'all') {
                 viewable = viewable.filter(t => {
                     const st = cleanString(getProp(t, ['Status', 'status'])).toUpperCase();
-                    if (filterStatus === 'PROGRESS') return st.includes('PROGRESS') || st.includes('VERIF') || st === '';
-                    if (filterStatus === 'SELESAI') return st.includes('SELESAI') || st.includes('APPROVED');
-                    if (filterStatus === 'OVERDUE') return st.includes('OVERDUE') || st.includes('TERLEWAT');
+                    if (filterStatus === 'progress') return st.includes('PROGRESS') || st.includes('VERIF') || st === '';
+                    if (filterStatus === 'selesai') return st.includes('SELESAI') || st.includes('APPROVED');
+                    if (filterStatus === 'overdue') return st.includes('OVERDUE') || st.includes('TERLEWAT');
                     return true;
                 });
             }
@@ -1071,7 +846,7 @@
                 }).join('');
             }
 
-            // STATISTIK INDIKATOR
+            // STATISTIK
             let cProgress = 0, cWarning = 0, cLate = 0, cDone = 0, cOverdue = 0;
             const todayStr = new Date().toISOString().split('T')[0];
 
@@ -1099,7 +874,7 @@
             document.getElementById('stat-done').innerText = cDone;
             document.getElementById('stat-overdue').innerText = cOverdue;
 
-            // RENDER TABEL TUGAS
+            // RENDER TABEL
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">Belum ada data tugas untuk ditampilkan pada filter ini.</td></tr>`;
@@ -1170,6 +945,364 @@
             }).join('');
 
             lucide.createIcons();
+        }
+
+        // =========================================================================
+        // OTOMATISASI TANGGAL & WARNING HARIAN (POINT 3 & 4)
+        // =========================================================================
+        function toggleJenisTugasField() {
+            const jenis = document.getElementById('task-jenis').value;
+            const freqField = document.getElementById('field-frekuensi');
+            const endWrapper = document.getElementById('wrapper-task-end');
+            
+            if (jenis === 'Rutin') {
+                freqField.classList.remove('hidden');
+                endWrapper.classList.add('hidden');
+                document.getElementById('task-end').required = false;
+                handleFrekuensiChange();
+            } else {
+                freqField.classList.add('hidden');
+                endWrapper.classList.remove('hidden');
+                document.getElementById('task-end').required = true;
+                
+                document.getElementById('task-late').readOnly = false;
+                document.getElementById('task-early').readOnly = false;
+                document.getElementById('task-late').classList.remove('bg-gray-800', 'text-gray-500');
+            }
+        }
+
+        function handleFrekuensiChange() {
+            const freq = document.getElementById('task-frekuensi').value;
+            const lateInput = document.getElementById('task-late');
+            const earlyInput = document.getElementById('task-early');
+            
+            if (freq === 'Harian') {
+                lateInput.value = 1;
+                lateInput.readOnly = true;
+                lateInput.classList.add('bg-gray-800', 'text-gray-500');
+                
+                earlyInput.value = 0;
+                earlyInput.readOnly = true;
+                earlyInput.classList.add('bg-gray-800', 'text-gray-500');
+            } else {
+                lateInput.readOnly = false;
+                lateInput.classList.remove('bg-gray-800', 'text-gray-500');
+                
+                earlyInput.readOnly = false;
+                earlyInput.classList.remove('bg-gray-800', 'text-gray-500');
+            }
+        }
+
+        function calculateAutoTargetDate(startDateStr, freq) {
+            if (!startDateStr) return '';
+            let d = new Date(startDateStr);
+            if (freq === 'Harian') d.setDate(d.getDate() + 0);
+            else if (freq === 'Mingguan') d.setDate(d.getDate() + 7);
+            else if (freq === 'Bulanan') d.setMonth(d.getMonth() + 1);
+            else if (freq === 'Tahunan') d.setFullYear(d.getFullYear() + 1);
+            return d.toISOString().split('T')[0];
+        }
+
+        function closeTaskModal() {
+            document.getElementById('modal-task').classList.add('hidden');
+        }
+
+        function openTaskModal() {
+            document.getElementById('modal-task-title-ui').innerHTML = `<i data-lucide="plus-circle" class="w-4 h-4 text-brandPurple"></i> Form Input Tugas Baru`;
+            document.getElementById('task-id-edit').value = '';
+            document.getElementById('task-title').value = '';
+            document.getElementById('wrapper-catatan-baru').classList.remove('hidden');
+            document.getElementById('task-jenis').value = 'Project';
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('task-start').value = today;
+            document.getElementById('task-end').value = today;
+            
+            setupMasterDataUI();
+            toggleJenisTugasField();
+            document.getElementById('modal-task').classList.remove('hidden');
+        }
+
+        // =========================================================================
+        // UBAH DETAIL TUGAS NON-DESTRUKTIF (POINT 5)
+        // =========================================================================
+        function openEditTaskModalFromDetail() {
+            const taskId = document.getElementById('update-task-id').value;
+            const t = tasksData.find(x => getProp(x, ['TaskID', 'id']) === String(taskId));
+            if (!t) return;
+
+            document.getElementById('modal-update-task').classList.add('hidden');
+            document.getElementById('modal-task-title-ui').innerHTML = `<i data-lucide="edit-3" class="w-4 h-4 text-brandPurple"></i> Form Ubah Detail Tugas (Non-Destruktif)`;
+            
+            document.getElementById('task-id-edit').value = taskId;
+            document.getElementById('task-title').value = getProp(t, ['Judul', 'judul']);
+            document.getElementById('wrapper-catatan-baru').classList.add('hidden');
+            
+            document.getElementById('task-jenis').value = getProp(t, ['JenisTugas', 'jenisTugas']) || 'Project';
+            document.getElementById('task-frekuensi').value = getProp(t, ['Frekuensi', 'frekuensi']) || 'Harian';
+            document.getElementById('task-start').value = getProp(t, ['TanggalMulai', 'tanggalMulai']);
+            document.getElementById('task-end').value = getProp(t, ['TanggalTarget', 'tanggalTarget']);
+            document.getElementById('task-late').value = getProp(t, ['LateWarningHari', 'lateWarningHari']);
+            document.getElementById('task-early').value = getProp(t, ['EarlyWarningHari', 'earlyWarningHari']);
+
+            setupMasterDataUI();
+            
+            setTimeout(() => {
+                const dt = getProp(t, ['divisiTarget', 'DivisiTarget']);
+                if (dt) {
+                    document.getElementById('task-divisi-target').value = dt;
+                    updateDeptOptions();
+                }
+                setTimeout(() => {
+                    const dp = getProp(t, ['DeptTarget', 'deptTarget']);
+                    if (dp) {
+                        document.getElementById('task-dept-target').value = dp;
+                        updatePICOptions();
+                    }
+                    setTimeout(() => {
+                        const picNik = getProp(t, ['PIC_NIK', 'picNik']);
+                        const selPic = document.getElementById('task-pic-target');
+                        for (let opt of selPic.options) {
+                            if (opt.value.includes(picNik)) opt.selected = true;
+                        }
+                    }, 100);
+                }, 100);
+            }, 100);
+
+            toggleJenisTugasField();
+            document.getElementById('modal-task').classList.remove('hidden');
+        }
+
+        async function handleSaveOrEditTask(e) {
+            e.preventDefault();
+            const editId = document.getElementById('task-id-edit').value;
+            const btn = document.getElementById('btn-save-task');
+            btn.disabled = true;
+            btn.innerText = 'MENYIMPAN...';
+
+            const selPic = document.getElementById('task-pic-target').value;
+            const picNamaVal = selPic.split(' - ')[0] || selPic;
+            const picNikVal = selPic.split(' - ')[1] ? selPic.split(' - ')[1].split(' ')[0] : '';
+            
+            let jenis = document.getElementById('task-jenis').value;
+            let start = document.getElementById('task-start').value;
+            let freq = jenis === 'Rutin' ? document.getElementById('task-frekuensi').value : '-';
+            
+            let target = document.getElementById('task-end').value;
+            if (jenis === 'Rutin') target = calculateAutoTargetDate(start, freq);
+
+            const payload = {
+                id: editId || ('TSK-' + Date.now().toString().slice(-5)),
+                judul: document.getElementById('task-title').value,
+                jenisTugas: jenis,
+                frekuensi: freq,
+                divisiTarget: document.getElementById('task-divisi-target').value,
+                deptTarget: document.getElementById('task-dept-target').value,
+                picNik: picNikVal,
+                picNama: picNamaVal,
+                tanggalMulai: start,
+                tanggalTarget: target,
+                lateWarningHari: document.getElementById('task-late').value,
+                earlyWarningHari: document.getElementById('task-early').value
+            };
+
+            if (!editId) {
+                payload.pemberiNik = currentUser.nik;
+                payload.pemberiNama = currentUser.nama;
+                payload.catatanBebas = document.getElementById('task-catatan').value;
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'addTask', payload, actorNik: currentUser.nik, actorNama: currentUser.nama, actorDept: currentUser.dept })
+                });
+                alert('Tugas Baru Berhasil Disimpan!');
+            } else {
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'editTask', payload, actorNik: currentUser.nik, actorNama: currentUser.nama, actorDept: currentUser.dept })
+                });
+                alert('Detail Tugas Berhasil Diubah (History Tercatat secara Non-Destruktif)!');
+            }
+            
+            closeTaskModal();
+            fetchDataFromGAS();
+            btn.disabled = false;
+            btn.innerText = 'SIMPAN TUGAS';
+        }
+
+        function selectTaskStatus(status) {
+            document.getElementById('selected-status-btn').value = status;
+            
+            const btnProg = document.getElementById('btn-status-progress');
+            const btnDone = document.getElementById('btn-status-selesai');
+            const btnOver = document.getElementById('btn-status-overdue');
+
+            btnProg.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
+            btnDone.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
+            btnOver.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
+
+            if (status === 'In Progress') {
+                btnProg.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-indigo-600/30 border-indigo-500 text-indigo-300 shadow";
+            } else if (status === 'Selesai') {
+                btnDone.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-emerald-600/30 border-emerald-500 text-emerald-300 shadow";
+                document.getElementById('update-progress').value = 100;
+            } else if (status === 'Overdue') {
+                btnOver.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-rose-600/30 border-rose-500 text-rose-300 shadow";
+            }
+        }
+
+        // =========================================================================
+        // HISTORI RUTIN 2 BULAN & DOCUMENT LIST (POINT 2)
+        // =========================================================================
+        function openUpdateTaskModal(id) {
+            const t = tasksData.find(x => getProp(x, ['TaskID', 'id', 'ID']) === String(id));
+            if (!t) return;
+
+            document.getElementById('update-task-id').value = id;
+            document.getElementById('update-task-title').innerText = `${id} - ${getProp(t, ['Judul', 'judul'])}`;
+            document.getElementById('update-progress').value = getProp(t, ['Progress', 'progress']) || 0;
+            document.getElementById('update-catatan').value = '';
+            document.getElementById('update-file').value = '';
+
+            const currentStatus = getProp(t, ['Status', 'status']) || 'In Progress';
+            selectTaskStatus(currentStatus);
+
+            // Riwayat Dokumen
+            const existingDocRaw = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
+            const docListElem = document.getElementById('existing-doc-list');
+            docListElem.innerHTML = '';
+
+            if (existingDocRaw) {
+                const urls = existingDocRaw.split(',').filter(u => u.trim().startsWith('http'));
+                if (urls.length > 0) {
+                    urls.forEach((u, idx) => {
+                        docListElem.innerHTML += `
+                            <div class="flex items-center justify-between text-[11px] bg-panelBg p-1.5 px-2.5 rounded-lg border border-borderDark">
+                                <span class="text-gray-300 font-medium">📄 Dokumen Lampiran #${idx + 1}</span>
+                                <a href="${u.trim()}" target="_blank" class="text-brandPurple font-bold hover:underline flex items-center gap-1">
+                                    Buka File <i data-lucide="external-link" class="w-3 h-3"></i>
+                                </a>
+                            </div>
+                        `;
+                    });
+                } else {
+                    docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
+                }
+            } else {
+                docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
+            }
+
+            // Catatan Histori
+            const feedbackHistory = getProp(t, ['Catatan', 'catatan', 'CatatanBebas']);
+            document.getElementById('feedback-history-list').innerText = feedbackHistory || 'Belum ada catatan histori.';
+
+            // Histori Pengerjaan Rutin (Max 2 Bulan)
+            const historyContainer = document.getElementById('routine-history-container');
+            const historyList = document.getElementById('routine-history-list');
+            const jenis = cleanString(getProp(t, ['JenisTugas', 'jenis']));
+            
+            if (jenis.includes('rutin')) {
+                const currentJudul = cleanString(getProp(t, ['Judul', 'judul']));
+                const currentDept = cleanString(getProp(t, ['DeptTarget', 'dept']));
+                const twoMonthsAgo = new Date();
+                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+                
+                const historyTasks = tasksData.filter(hx => {
+                    if (cleanString(getProp(hx, ['TaskID', 'id'])) === id) return false;
+                    if (cleanString(getProp(hx, ['JenisTugas', 'jenis'])).includes('rutin') && 
+                        cleanString(getProp(hx, ['Judul', 'judul'])) === currentJudul && 
+                        cleanString(getProp(hx, ['DeptTarget', 'dept'])) === currentDept &&
+                        cleanString(getProp(hx, ['Status', 'status'])).includes('selesai')) {
+                        
+                        const tglSelesai = new Date(getProp(hx, ['TanggalTarget', 'tanggalTarget']));
+                        return tglSelesai >= twoMonthsAgo;
+                    }
+                    return false;
+                });
+
+                if (historyTasks.length > 0) {
+                    historyList.innerHTML = historyTasks.map(hx => `
+                        <div class="text-[10px] bg-panelBg p-1.5 px-2.5 rounded-lg border border-borderDark flex justify-between items-center">
+                            <span class="text-gray-300 font-bold">${getProp(hx, ['TaskID'])} (PIC: ${getProp(hx, ['PIC_Nama'])})</span>
+                            <span class="text-emerald-400 font-mono font-bold">Selesai: ${getProp(hx, ['TanggalTarget'])}</span>
+                        </div>
+                    `).join('');
+                    historyContainer.classList.remove('hidden');
+                } else {
+                    historyList.innerHTML = `<span class="text-[10px] text-gray-500 italic">Belum ada riwayat pengerjaan selesai dalam 2 bulan terakhir.</span>`;
+                    historyContainer.classList.remove('hidden');
+                }
+            } else {
+                historyContainer.classList.add('hidden');
+            }
+
+            lucide.createIcons();
+            document.getElementById('modal-update-task').classList.remove('hidden');
+        }
+
+        async function handleSaveTaskUpdate(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-update');
+            btn.disabled = true;
+            btn.innerText = 'MENYIMPAN...';
+
+            const taskId = document.getElementById('update-task-id').value;
+            const progress = document.getElementById('update-progress').value;
+            const status = document.getElementById('selected-status-btn').value;
+            const catatan = document.getElementById('update-catatan').value;
+            const fileInput = document.getElementById('update-file');
+
+            let fileData = null, fileName = '', fileType = '';
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Ukuran file maksimal adalah 5MB!');
+                    btn.disabled = false;
+                    btn.innerText = 'SIMPAN PROGRESS & FEEDBACK';
+                    return;
+                }
+
+                fileName = file.name;
+                fileType = file.type;
+                fileData = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'updateTask',
+                        taskId: taskId,
+                        progress: progress,
+                        status: status,
+                        catatan: catatan,
+                        fileData: fileData,
+                        fileName: fileName,
+                        fileType: fileType,
+                        actorNik: currentUser.nik,
+                        actorNama: currentUser.nama,
+                        actorDept: currentUser.dept
+                    })
+                });
+
+                const res = await response.json();
+                if (res.status === 'success') {
+                    alert('Progress, Feedback, & Dokumen berhasil disimpan!');
+                    document.getElementById('modal-update-task').classList.add('hidden');
+                    fetchDataFromGAS();
+                } else {
+                    alert('Gagal update: ' + res.message);
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan koneksi!');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'SIMPAN PROGRESS & FEEDBACK';
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
