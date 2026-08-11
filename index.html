@@ -9,7 +9,17 @@
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: { extend: { colors: { darkBg: '#0b0d12', panelBg: '#13161f', cardBg: '#1c202c', borderDark: '#2a2f40', brandPurple: '#6366f1' } } }
+            theme: { 
+                extend: { 
+                    colors: { 
+                        darkBg: '#0b0d12', 
+                        panelBg: '#13161f', 
+                        cardBg: '#1c202c', 
+                        borderDark: '#2a2f40', 
+                        brandPurple: '#6366f1' 
+                    } 
+                } 
+            }
         }
     </script>
     <style>
@@ -88,7 +98,7 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- DROPDOWN NOTIFIKASI LONCENG TERHUBUNG -->
+                <!-- DROPDOWN NOTIFIKASI LONCENG -->
                 <div class="relative">
                     <button onclick="toggleNotifDropdown(event)" class="relative bg-cardBg border border-borderDark p-2 rounded-xl text-amber-400 hover:text-amber-300 transition flex items-center justify-center" title="Notifikasi Tugas">
                         <i data-lucide="bell" class="w-4 h-4"></i>
@@ -243,7 +253,7 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block font-semibold text-emerald-400 mb-1">3. PIC Penerima (Nama - NIK & Jabatan):</label>
+                        <label class="block font-semibold text-emerald-400 mb-1">3. PIC Penerima (Bawahan / Rekan Sah):</label>
                         <select id="task-pic-target" required class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
                         </select>
                     </div>
@@ -312,7 +322,6 @@
                     <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Detail Tugas, Feedback & Report Dokumen
                 </h3>
                 <div class="flex items-center gap-2">
-                    <!-- TOMBOL UBAH TUGAS (POINT 5) -->
                     <button id="btn-edit-mode" onclick="openEditTaskModalFromDetail()" class="text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-xl shadow font-bold flex items-center gap-1 transition">
                         <i data-lucide="edit-3" class="w-3 h-3"></i> Ubah Detail Tugas
                     </button>
@@ -360,7 +369,6 @@
                     <textarea id="update-catatan" rows="2" placeholder="Tuliskan perkembangan tugas, kendala, atau revisi..." class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none"></textarea>
                 </div>
 
-                <!-- RIWAYAT DOKUMEN LAMPIRAN TERDAHULU (TERHUBUNG KEMBALI) -->
                 <div id="existing-doc-container" class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
                         <i data-lucide="paperclip" class="w-3.5 h-3.5"></i> Riwayat Dokumen Lampiran Tugas Ini:
@@ -369,7 +377,6 @@
                     </div>
                 </div>
 
-                <!-- RIWAYAT RUTIN (MAKS 2 BULAN) - POINT 2 -->
                 <div id="routine-history-container" class="hidden space-y-1.5 bg-indigo-950/20 p-3 rounded-xl border border-indigo-500/30">
                     <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
                         <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Histori Pengerjaan Rutin (2 Bulan Terakhir):
@@ -378,7 +385,6 @@
                     </div>
                 </div>
 
-                <!-- RIWAYAT CATATAN & FEEDBACK -->
                 <div class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <label class="block font-bold text-amber-400 flex items-center gap-1.5 text-xs">
                         <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Histori Feedback & Catatan Laporan:
@@ -397,7 +403,7 @@
         </div>
     </div>
 
-    <!-- MODAL UBAH PASSWORD (TERHUBUNG KEMBALI) -->
+    <!-- MODAL UBAH PASSWORD -->
     <div id="modal-changepass" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-md p-6 space-y-4">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -427,7 +433,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGIKA UTAMA -->
+    <!-- SCRIPT LOGIKA UTAMA METODE HIREARKI JABATAN MUTLAK -->
     <script>
         let currentUser = null;
         let masterUsers = [];
@@ -490,7 +496,6 @@
                     errBox.classList.remove('hidden');
                 }
             } catch (err) {
-                console.error('Login Error:', err);
                 document.getElementById('login-error-msg').innerText = 'Gagal terhubung ke GSheet!';
                 errBox.classList.remove('hidden');
             } finally {
@@ -499,34 +504,32 @@
             }
         }
 
-        function isUserSuperAdminOrDireksi() {
-            const level = cleanString(currentUser.level);
-            return cleanString(currentUser.role).includes('admin') || level.includes('direksi') || cleanString(currentUser.dept).includes('direksi');
+        function isDirekturUtama() {
+            return currentUser.rank === 1 || cleanString(currentUser.id_jabatan) === 'jab-01';
         }
 
         // =========================================================================
-        // HIERARKI KETAT UNTUK AHW, MFT, DCH, FAG (MENCEGAH KEBOCORAN DIVISI/ATASAN)
+        // ATURAN HIREARKI JABATAN KETAT UNTUK FORM & DROPDOWN
         // =========================================================================
         function setupMasterDataUI() {
-            const isSAD = isUserSuperAdminOrDireksi();
+            const isDirUtama = isDirekturUtama();
             const allDivisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
             
-            // 1. Header Filter Divisi
+            // Filter Dropdown Header
             const headerDivisiSelect = document.getElementById('filter-divisi-header');
-            headerDivisiSelect.innerHTML = isSAD ? `<option value="ALL">🏛️ Semua Divisi (Global)</option>` : `<option value="ALL">🏛️ Divisi Saya</option>`;
+            headerDivisiSelect.innerHTML = isDirUtama ? `<option value="ALL">🏛️ Semua Divisi (Global)</option>` : `<option value="ALL">🏛️ Divisi Saya</option>`;
             
-            (isSAD ? allDivisiList : currentUser.divisiList).forEach(d => {
+            (isDirUtama ? allDivisiList : currentUser.divisiList).forEach(d => {
                 headerDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
             });
 
-            // 2. Modal Form Divisi Target
+            // Dropdown Target Divisi
             const taskDivisiSelect = document.getElementById('task-divisi-target');
             taskDivisiSelect.innerHTML = '';
             
-            if (isSAD) {
+            if (isDirUtama) {
                 allDivisiList.forEach(d => taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`);
             } else {
-                // HAPUS OPSI DIREKSI UNTUK NON-DIREKSI (Spt MFT)
                 currentUser.divisiList.forEach(d => {
                     if (!cleanString(d).includes('direksi')) {
                         taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
@@ -544,11 +547,10 @@
             const taskDeptSelect = document.getElementById('task-dept-target');
             taskDeptSelect.innerHTML = '';
             
-            const isSAD = isUserSuperAdminOrDireksi();
-            const level = cleanString(currentUser.level);
-            const isManajer = level.includes('manajer') || level.includes('manager');
+            const isDirUtama = isDirekturUtama();
+            const userRank = currentUser.rank;
 
-            if (isSAD || isManajer) {
+            if (userRank <= 3) {
                 const deptsInDivisi = [...new Set(
                     masterHirearki
                         .filter(h => String(h.Divisi || h.divisi || '').trim() === selDiv)
@@ -557,14 +559,13 @@
                 )];
                 
                 deptsInDivisi.forEach(d => {
-                    if (!isSAD && cleanString(d).includes('direksi')) return; // Non-Direksi dilarang memilih Dept Direksi
+                    if (!isDirUtama && cleanString(d).includes('direksi')) return;
                     taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
                 });
                 if (taskDeptSelect.options.length === 0) {
                     taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
                 }
             } else {
-                // Staff/Pengawas dilarang lintas departemen
                 taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
             }
             updatePICOptions();
@@ -575,24 +576,19 @@
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
             
-            const level = cleanString(currentUser.level);
-            const isSAD = isUserSuperAdminOrDireksi();
-            const isManajer = level.includes('manajer') || level.includes('manager');
+            const myRank = currentUser.rank; // MFT = Rank 2, DPS = Rank 1
 
+            // PERIKSA RANK/HIREARKI JABATAN: MFT DILARANG MENUGASKAN DPS!
             const filteredPegawai = masterUsers.filter(u => {
                 if (cleanString(u.dept) !== cleanString(selDept)) return false;
                 if (cleanString(u.nik) === cleanString(currentUser.nik)) return false;
                 
-                const uLevel = cleanString(u.level);
-                // Blokir atasan (Direksi)
-                if (!isSAD && (uLevel.includes('direksi') || cleanString(u.jabatan).includes('direktur'))) return false;
-                // Blokir atasan (Manajer) jika yang login adalah staff/pengawas
-                if (!isSAD && !isManajer && (uLevel.includes('manajer') || uLevel.includes('manager'))) return false;
-                return true;
+                // Rank target harus LEBIH BESAR (lebih rendah jabatannya) atau SAMA (rekan)
+                return u.rank >= myRank;
             });
 
             if (filteredPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada bawahan/rekan yang sah di Dept ${selDept}</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada bawahan/rekan sah di Dept ${selDept}</option>`;
                 return;
             }
             filteredPegawai.forEach(p => {
@@ -727,6 +723,9 @@
             return 'DPS';
         }
 
+        // =========================================================================
+        // ISOLASI TAMPILAN DASHBOARD BERDASARKAN HIREARKI JABATAN & WEWENANG DIVISI
+        // =========================================================================
         function renderDashboard() {
             let viewable = tasksData;
 
@@ -734,44 +733,50 @@
             const filterJenis = cleanString(document.getElementById('filter-jenis-header')?.value || 'ALL');
             const filterStatus = cleanString(document.getElementById('filter-status-header')?.value || 'ALL');
 
-            const userLevel = cleanString(currentUser.level);
             const userNik = cleanString(currentUser.nik);
             const userNama = cleanString(currentUser.nama);
-            
-            const isSAD = isUserSuperAdminOrDireksi();
-            const isManager = userLevel.includes('manajer') || userLevel.includes('manager');
+            const userRank = currentUser.rank;
 
-            // HIERARKI AKSES TUGAS (AHW HANYA LIHAT MEDIS/KLINIK)
-            if (!isSAD) {
-                if (isManager) {
-                    const userDivs = (currentUser.divisiList || [currentUser.dept]).map(cleanString);
+            if (!isDirekturUtama()) { // Jika bukan Direktur Utama (DPS)
+                if (userRank <= 3) { 
+                    // Level Direktur & Manajer (AHW, DCH, HPN)
+                    const myDivisions = (currentUser.divisiList || [currentUser.dept]).map(cleanString);
+                    const myDept = cleanString(currentUser.dept);
+
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
-                        const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
+                        const pmbNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
                         const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
+                        
+                        const divTarget = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi', 'Divisi']));
                         const deptTarget = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
-                        const divisiTarget = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']));
 
-                        const isMine = (picNik === userNik) || (pemberiNik === userNik) || (picNama.includes(userNama));
-                        const isTargetUnderMyDiv = userDivs.some(ud => 
-                            divisiTarget.includes(ud) || ud.includes(divisiTarget) || 
-                            deptTarget.includes(ud) || ud.includes(deptTarget)
-                        );
+                        const isMyDirectTask = (picNik !== '' && picNik === userNik) || 
+                                               (pmbNik !== '' && pmbNik === userNik) || 
+                                               (picNama !== '' && picNama.includes(userNama));
+                        
+                        if (isMyDirectTask) return true;
 
-                        return isMine || isTargetUnderMyDiv;
+                        // AHW (Laboratorium, Klinik) DILINDUNGI TOTAL DARI MELIHAT DIVISI "SDM, Umum, & TI"
+                        const matchDiv = myDivisions.some(md => md !== '' && (divTarget.includes(md) || md.includes(divTarget)));
+                        const matchDept = (myDept !== '' && (deptTarget.includes(myDept) || myDept.includes(deptTarget)));
+
+                        return matchDiv || matchDept;
                     });
                 } else {
+                    // Staf / Pengawas: Kunci 100% hanya tugas yang melibatkan dirinya
                     viewable = viewable.filter(t => {
                         const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
-                        const pemberiNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
+                        const pmbNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
                         const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
 
-                        return (picNik !== '' && picNik === userNik) || (picNama !== '' && picNama.includes(userNama)) || (pemberiNik !== '' && pemberiNik === userNik);
+                        return (picNik !== '' && picNik === userNik) || 
+                               (picNama !== '' && picNama.includes(userNama)) || 
+                               (pmbNik !== '' && pmbNik === userNik);
                     });
                 }
             }
 
-            // FILTER DIVISI
             if (filterDivisi !== 'all') {
                 viewable = viewable.filter(t => {
                     const deptTarget = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
@@ -780,7 +785,6 @@
                 });
             }
 
-            // FILTER JENIS
             if (filterJenis !== 'all') {
                 viewable = viewable.filter(t => {
                     const jenis = cleanString(getProp(t, ['JenisTugas', 'jenisTugas']));
@@ -788,7 +792,6 @@
                 });
             }
 
-            // FILTER STATUS
             if (filterStatus !== 'all') {
                 viewable = viewable.filter(t => {
                     const st = cleanString(getProp(t, ['Status', 'status'])).toUpperCase();
@@ -799,7 +802,6 @@
                 });
             }
 
-            // NOTIFIKASI
             const myReceivedTasks = tasksData.filter(t => {
                 const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik']));
                 const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama']));
@@ -846,7 +848,6 @@
                 }).join('');
             }
 
-            // STATISTIK
             let cProgress = 0, cWarning = 0, cLate = 0, cDone = 0, cOverdue = 0;
             const todayStr = new Date().toISOString().split('T')[0];
 
@@ -874,7 +875,6 @@
             document.getElementById('stat-done').innerText = cDone;
             document.getElementById('stat-overdue').innerText = cOverdue;
 
-            // RENDER TABEL
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">Belum ada data tugas untuk ditampilkan pada filter ini.</td></tr>`;
@@ -947,9 +947,7 @@
             lucide.createIcons();
         }
 
-        // =========================================================================
-        // OTOMATISASI TANGGAL & WARNING HARIAN (POINT 3 & 4)
-        // =========================================================================
+        // OTOMATISASI TANGGAL TARGET & WARNING HARIAN
         function toggleJenisTugasField() {
             const jenis = document.getElementById('task-jenis').value;
             const freqField = document.getElementById('field-frekuensi');
@@ -1023,9 +1021,7 @@
             document.getElementById('modal-task').classList.remove('hidden');
         }
 
-        // =========================================================================
-        // UBAH DETAIL TUGAS NON-DESTRUKTIF (POINT 5)
-        // =========================================================================
+        // UBAH DETAIL TUGAS NON-DESTRUKTIF
         function openEditTaskModalFromDetail() {
             const taskId = document.getElementById('update-task-id').value;
             const t = tasksData.find(x => getProp(x, ['TaskID', 'id']) === String(taskId));
@@ -1150,9 +1146,7 @@
             }
         }
 
-        // =========================================================================
-        // HISTORI RUTIN 2 BULAN & DOCUMENT LIST (POINT 2)
-        // =========================================================================
+        // HISTORI RUTIN (MAKS 2 BULAN) & RIWAYAT DOKUMEN
         function openUpdateTaskModal(id) {
             const t = tasksData.find(x => getProp(x, ['TaskID', 'id', 'ID']) === String(id));
             if (!t) return;
@@ -1166,7 +1160,6 @@
             const currentStatus = getProp(t, ['Status', 'status']) || 'In Progress';
             selectTaskStatus(currentStatus);
 
-            // Riwayat Dokumen
             const existingDocRaw = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
             const docListElem = document.getElementById('existing-doc-list');
             docListElem.innerHTML = '';
@@ -1191,11 +1184,9 @@
                 docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
             }
 
-            // Catatan Histori
             const feedbackHistory = getProp(t, ['Catatan', 'catatan', 'CatatanBebas']);
             document.getElementById('feedback-history-list').innerText = feedbackHistory || 'Belum ada catatan histori.';
 
-            // Histori Pengerjaan Rutin (Max 2 Bulan)
             const historyContainer = document.getElementById('routine-history-container');
             const historyList = document.getElementById('routine-history-list');
             const jenis = cleanString(getProp(t, ['JenisTugas', 'jenis']));
