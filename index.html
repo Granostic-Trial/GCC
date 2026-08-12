@@ -270,7 +270,6 @@
 
                     <div id="field-frekuensi" class="hidden">
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
-                        <!-- DAFTAR FREKUENSI LENGKAP HARDCODED -->
                         <select id="task-frekuensi" onchange="handleFrekuensiChange()" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
                             <option value="Harian">Harian</option>
                             <option value="2 Harian">2 Harian</option>
@@ -471,6 +470,7 @@
             return '';
         }
 
+        // AKURASI KETAT: MENGGUNAKAN MODE text/plain AGAR BERHASIL TERHUBUNG KE GSHEET TANPA DIBLOKIR CORS
         async function handleLogin(e) {
             e.preventDefault();
             const nik = document.getElementById('login-nik').value.trim();
@@ -485,6 +485,7 @@
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'login', nik: nik, password: pass })
                 });
                 const res = await response.json();
@@ -509,7 +510,7 @@
                 }
             } catch (err) {
                 console.error('Login Error:', err);
-                document.getElementById('login-error-msg').innerText = 'Gagal terhubung ke GSheet!';
+                document.getElementById('login-error-msg').innerText = 'Gagal terhubung ke GSheet! Periksa deployment Apps Script.';
                 errBox.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
@@ -597,7 +598,7 @@
             masterUsers.forEach(u => {
                 const uNik = cleanString(u.nik || u.NIK);
                 const myNik = cleanString(currentUser.nik);
-                if (uNik === myNik) return; // Mencegah tugaskan diri sendiri
+                if (uNik === myNik) return; 
 
                 const uDept = cleanString(u.dept || u.Departemen);
                 const uJabatan = cleanString(u.jabatan || u.Jabatan);
@@ -660,6 +661,7 @@
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
                         action: 'changePassword',
                         nik: currentUser.nik,
@@ -697,6 +699,7 @@
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'getData' })
                 });
                 const res = await response.json();
@@ -998,7 +1001,6 @@
             }
         }
 
-        // FOKUS PERBAIKAN: KALENDER HISTORI LOOPING BERDASARKAN SEMUA JENIS FREKUENSI (2 HARIAN, 3 MINGGUAN, DLL)
         function calculateAutoTargetDate(startDateStr, freq) {
             if (!startDateStr) return '';
             let d = new Date(startDateStr);
@@ -1126,12 +1128,14 @@
                 payload.catatanBebas = document.getElementById('task-catatan').value;
                 await fetch(GAS_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'addTask', payload, actorNik: currentUser.nik, actorNama: currentUser.nama, actorDept: currentUser.dept })
                 });
                 alert('Tugas Baru Berhasil Disimpan!');
             } else {
                 await fetch(GAS_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'editTask', payload, actorNik: currentUser.nik, actorNama: currentUser.nama, actorDept: currentUser.dept })
                 });
                 alert('Detail Tugas Berhasil Diubah (History Tercatat secara Non-Destruktif)!');
@@ -1282,6 +1286,7 @@
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
                         action: 'updateTask',
                         taskId: taskId,
