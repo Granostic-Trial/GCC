@@ -221,12 +221,12 @@
         </main>
     </div>
 
-    <!-- MODAL INPUT TUGAS / UBAH TUGAS (NON-DESTRUKTIF) -->
+    <!-- MODAL INPUT TUGAS / UBAH TUGAS -->
     <div id="modal-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto relative">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
                 <h3 id="modal-task-title-ui" class="font-bold text-sm text-white flex items-center gap-2">
-                    <i data-lucide="plus-circle" class="w-4 h-4 text-brandPurple"></i> Form Input Tugas / Project
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-brandPurple"></i> Form Input Tugas Baru
                 </h3>
                 <button onclick="closeTaskModal()" class="text-gray-400 hover:text-white">✕</button>
             </div>
@@ -270,7 +270,7 @@
 
                     <div id="field-frekuensi" class="hidden">
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
-                        <!-- FOKUS PERBAIKAN: DAFTAR FREKUENSI LENGKAP -->
+                        <!-- DAFTAR FREKUENSI LENGKAP HARDCODED -->
                         <select id="task-frekuensi" onchange="handleFrekuensiChange()" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
                             <option value="Harian">Harian</option>
                             <option value="2 Harian">2 Harian</option>
@@ -326,7 +326,7 @@
         </div>
     </div>
 
-    <!-- MODAL UPDATE PROGRESS, FEEDBACK HISTORI, & DOKUMEN LAMPIRAN -->
+    <!-- MODAL UPDATE PROGRESS & DOKUMEN -->
     <div id="modal-update-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto relative">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
@@ -592,35 +592,45 @@
             const picSelect = document.getElementById('task-pic-target');
             picSelect.innerHTML = '';
 
-            const myMatchRank = String(currentUser.id_jabatan || '').match(/\d+/);
-            const myRankNum = myMatchRank ? parseInt(myMatchRank[0], 10) : (currentUser.jabatan === 'Direktur Utama' ? 1 : (currentUser.jabatan === 'Direktur' ? 2 : 99));
+            let validPegawai = [];
 
-            const filteredPegawai = masterUsers.filter(u => {
-                if (cleanString(u.nik) === cleanString(currentUser.nik)) return false; 
+            masterUsers.forEach(u => {
+                const uNik = cleanString(u.nik || u.NIK);
+                const myNik = cleanString(currentUser.nik);
+                if (uNik === myNik) return; // Mencegah tugaskan diri sendiri
 
-                const uMatchRank = String(u.id_jabatan || '').match(/\d+/);
-                const uRankNum = uMatchRank ? parseInt(uMatchRank[0], 10) : (u.jabatan === 'Direktur Utama' ? 1 : 99);
+                const uDept = cleanString(u.dept || u.Departemen);
+                const uJabatan = cleanString(u.jabatan || u.Jabatan);
+                const uDivisiList = String(u.divisiList || u.Divisi || u.divisi || '').toLowerCase();
 
-                // Atasan (MFT/DPS) tidak bisa saling tugaskan ke atas
-                if (myRankNum > uRankNum) return false; 
+                // 1. Staf yang persis berada di Departemen terpilih (misal: Mikrobiologi)
+                const isDeptStaff = (uDept === selectedDept);
 
-                // 1. Munculkan staf yang persis berada di Departemen (misal Mikrobiologi)
-                const isExactDeptMember = cleanString(u.dept) === selectedDept;
+                // 2. Manajer yang membawahi Divisi tersebut (misal: AHW untuk Divisi Laboratorium)
+                const isDivisiManager = (uDivisiList.includes(selectedDivisi) || uDivisiList.includes(selectedDept)) && 
+                                        (uJabatan.includes('manajer') || uJabatan.includes('manager') || uJabatan.includes('direktur'));
 
-                // 2. Munculkan juga Manajer yang mengawasi Divisi tersebut (misal AHW mengawasi Laboratorium)
-                const uDivs = (u.divisiList || [u.dept]).map(cleanString);
-                const isDivisiManager = uDivs.includes(selectedDivisi) && (cleanString(u.level).includes('manajer') || cleanString(u.jabatan).includes('manajer'));
-
-                return isExactDeptMember || isDivisiManager;
+                if (isDeptStaff || isDivisiManager) {
+                    if (!validPegawai.some(p => cleanString(p.nik) === uNik)) {
+                        validPegawai.push(u);
+                    }
+                }
             });
 
-            if (filteredPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada bawahan/rekan sah di Dept ini</option>`;
+            if (validPegawai.length === 0) {
+                validPegawai = masterUsers.filter(u => cleanString(u.dept) === selectedDept && cleanString(u.nik) !== cleanString(currentUser.nik));
+            }
+
+            if (validPegawai.length === 0) {
+                picSelect.innerHTML = `<option value="">Tidak ada pegawai/manajer sah di Dept ini</option>`;
                 return;
             }
 
-            filteredPegawai.forEach(p => {
-                picSelect.innerHTML += `<option value="${p.nama} - ${p.nik}">${p.nama} - ${p.nik} (${p.jabatan})</option>`;
+            validPegawai.forEach(p => {
+                const nama = p.nama || p.Nama || 'Tanpa Nama';
+                const nik = p.nik || p.NIK || '-';
+                const jabatan = p.jabatan || p.Jabatan || '-';
+                picSelect.innerHTML += `<option value="${nama} - ${nik}">${nama} - ${nik} (${jabatan})</option>`;
             });
         }
 
@@ -988,7 +998,7 @@
             }
         }
 
-        // FOKUS PERBAIKAN: KALENDER HISTORI LOOPING BERDASARKAN SEMUA JENIS FREKUENSI 
+        // FOKUS PERBAIKAN: KALENDER HISTORI LOOPING BERDASARKAN SEMUA JENIS FREKUENSI (2 HARIAN, 3 MINGGUAN, DLL)
         function calculateAutoTargetDate(startDateStr, freq) {
             if (!startDateStr) return '';
             let d = new Date(startDateStr);
