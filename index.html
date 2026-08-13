@@ -270,7 +270,6 @@
 
                     <div id="field-frekuensi" class="hidden">
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
-                        <!-- DAFTAR FREKUENSI LENGKAP 15 OPSI -->
                         <select id="task-frekuensi" onchange="handleFrekuensiChange()" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
                             <option value="Harian">Harian</option>
                             <option value="2 Harian">2 Harian</option>
@@ -518,18 +517,28 @@
             }
         }
 
+        // FUNGSI CEK LEVEL DIREKSI
         function isDirekturUtama() {
-            return currentUser.rank === 1 || cleanString(currentUser.id_jabatan) === 'jab-01';
+            const j = cleanString(currentUser.jabatan);
+            const l = cleanString(currentUser.level);
+            return j.includes('direktur utama') || l.includes('direktur utama') || currentUser.rank === 1;
+        }
+
+        function isDirektur() {
+            const j = cleanString(currentUser.jabatan);
+            const l = cleanString(currentUser.level);
+            return j.includes('direktur') || l.includes('direksi');
         }
 
         function setupMasterDataUI() {
-            const isSuperOrDir = isDirekturUtama() || cleanString(currentUser.role).includes('super admin') || cleanString(currentUser.level).includes('direksi');
+            const isDirUtama = isDirekturUtama();
+            const isDir = isDirektur();
             const allDivisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
             
             const headerDivisiSelect = document.getElementById('filter-divisi-header');
             headerDivisiSelect.innerHTML = '';
 
-            if (isSuperOrDir) {
+            if (isDirUtama || isDir) {
                 headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
                 allDivisiList.forEach(d => {
                     headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
@@ -547,7 +556,7 @@
             const taskDivisiSelect = document.getElementById('task-divisi-target');
             taskDivisiSelect.innerHTML = '';
 
-            if (isSuperOrDir) {
+            if (isDirUtama || isDir) {
                 allDivisiList.forEach(d => {
                     taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
                 });
@@ -586,7 +595,7 @@
             updatePICOptions();
         }
 
-        // PERBAIKAN UTAMA: DENGAN MEMADUKAN TIGA KRITERIA (DEPT/STAF, MANAJER DIVISI, DAN HIREARKI JABATAN)
+        // MATRIKS PENUGASAN (PILIHAN PIC PENERIMA): DENGAN ISOLASI DEPT & HAK AKSES LEVEL
         function updatePICOptions() {
             const selectedDivisi = cleanString(document.getElementById('task-divisi-target').value);
             const selectedDept = cleanString(document.getElementById('task-dept-target').value);
@@ -594,10 +603,12 @@
             picSelect.innerHTML = '';
 
             let validPegawai = [];
+            const myNik = cleanString(currentUser.nik);
+            const isDirUtama = isDirekturUtama();
+            const isDir = isDirektur();
 
             masterUsers.forEach(u => {
                 const uNik = cleanString(u.nik || u.NIK);
-                const myNik = cleanString(currentUser.nik);
                 if (uNik === myNik) return; // Mencegah tugaskan diri sendiri
 
                 const uDept = cleanString(u.dept || u.Departemen);
@@ -605,10 +616,15 @@
                 const uLevel = cleanString(u.level || u.Level);
                 const uDivisiList = (u.divisiList || [u.dept]).map(cleanString);
 
-                // KONDISI 1: Anggota/Staf yang ada di Dept target (Misal: Mikrobiologi)
+                // ATURAN ELEVASI: DIREKTUR TIDAK BISA TUGASKAN DIREKTUR UTAMA
+                if (isDir && !isDirUtama) {
+                    if (uJabatan.includes('direktur utama') || uLevel.includes('direktur utama')) return;
+                }
+
+                // 1. Staf/SPV/Member yang berada di Dept Target (misal: Mikrobiologi)
                 const isExactDeptMember = (uDept === selectedDept);
 
-                // KONDISI 2: Pimpinan/Manajer yang membawahi Divisi target (Misal: AHW sbg Manajer Medis untuk Laboratorium)
+                // 2. Manajer yang membawahi Divisi tersebut (misal: AHW untuk Divisi Laboratorium)
                 const isDivisiManager = uDivisiList.includes(selectedDivisi) && 
                                         (uLevel.includes('manajer') || uLevel.includes('manager') || uJabatan.includes('manajer') || uJabatan.includes('manager'));
 
@@ -620,7 +636,7 @@
             });
 
             if (validPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada pimpinan/bawahan sah di Dept ini</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada penerima sah di Dept/Divisi ini</option>`;
                 return;
             }
 
@@ -762,6 +778,7 @@
             return 'DPS';
         }
 
+        // PERBAIKAN MUTLAK: MATRIKS HAK AKSES HIRARKI PADA DASHBOARD TABEL
         function renderDashboard() {
             let viewable = tasksData;
 
@@ -771,25 +788,51 @@
 
             const userNik = cleanString(currentUser.nik);
             const userNama = cleanString(currentUser.nama);
-            const isSuperOrDir = isDirekturUtama() || cleanString(currentUser.role).includes('super admin') || cleanString(currentUser.level).includes('direksi');
+            const userDept = cleanString(currentUser.dept);
+            const userLevel = cleanString(currentUser.level || currentUser.jabatan);
+            const myDivs = (currentUser.divisiList || [currentUser.dept]).map(cleanString).filter(Boolean);
 
-            if (!isSuperOrDir) { 
-                const myDivs = (currentUser.divisiList || [currentUser.dept]).map(cleanString).filter(Boolean);
+            const isDirUtama = isDirekturUtama();
+            const isDir = isDirektur();
 
+            // MATRIKS ISOLASI TAMPILAN BERDASARKAN LEVEL & DEPARTEMEN
+            if (!isDirUtama && !isDir) {
                 viewable = viewable.filter(t => {
-                    const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik', 'PIC_Nik']));
-                    const pmbNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']));
-                    const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama']));
+                    const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik']));
+                    const pmbNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik']));
+                    const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama']));
                     
-                    const tDiv = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi', 'Divisi']));
+                    const tDiv = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']));
                     const tDept = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
 
+                    // 1. Diri Sendiri (Pemberi / Penerima) Selalu Bisa Lihat Tugasnya
                     if ((picNik !== '' && picNik === userNik) || (pmbNik !== '' && pmbNik === userNik) || (picNama !== '' && picNama.includes(userNama))) {
                         return true;
                     }
 
-                    const matchDiv = myDivs.some(md => md !== '' && (tDiv.includes(md) || md.includes(tDiv) || tDept.includes(md) || md.includes(tDept)));
-                    return matchDiv;
+                    // 2. ISOLASI DEPARTEMEN / DIVISI
+                    const isSameDeptOrDiv = myDivs.some(md => md !== '' && (tDiv.includes(md) || md.includes(tDiv) || tDept.includes(md) || md.includes(tDept) || tDept === userDept));
+                    if (!isSameDeptOrDiv) return false; // Blokir penuh jika beda dept/divisi
+
+                    // Cari profil PIC penerima tugas untuk cek levelnya
+                    const picUserObj = masterUsers.find(u => cleanString(u.nik) === picNik || cleanString(u.nama) === picNama);
+                    const picLevel = picUserObj ? cleanString(picUserObj.level || picUserObj.jabatan) : 'staf';
+
+                    // 3. ATURAN HIERARKI LEVEL (Staf, SPV, Manager)
+                    if (userLevel.includes('staf')) {
+                        // Staf hanya bisa lihat tugas sendiri (sudah terfilter di poin 1)
+                        return false;
+                    } 
+                    else if (userLevel.includes('spv') || userLevel.includes('pengawas') || userLevel.includes('supervisor')) {
+                        // SPV bisa lihat tugas Staf di bawah dept-nya
+                        return picLevel.includes('staf');
+                    } 
+                    else if (userLevel.includes('manajer') || userLevel.includes('manager')) {
+                        // Manager bisa lihat SPV & Staf di bawah divisinya
+                        return picLevel.includes('staf') || picLevel.includes('spv') || picLevel.includes('pengawas') || picLevel.includes('supervisor');
+                    }
+
+                    return false;
                 });
             }
 
@@ -887,7 +930,7 @@
 
             const tbody = document.getElementById('tasks-tbody');
             if (viewable.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500 font-bold">Tidak ada tugas dalam wewenang divisi Anda.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500 font-bold">Tidak ada tugas dalam wewenang hirarki Anda.</td></tr>`;
                 return;
             }
 
@@ -998,7 +1041,6 @@
             }
         }
 
-        // PERBAIKAN KALKULASI TARGET OTOMATIS BERDASARKAN KELIPATAN FREKUENSI
         function calculateAutoTargetDate(startDateStr, freq) {
             if (!startDateStr) return '';
             let d = new Date(startDateStr);
