@@ -779,6 +779,7 @@
         }
 
         // PERBAIKAN MUTLAK: MATRIKS HAK AKSES HIRARKI PADA DASHBOARD TABEL
+        // PERBAIKAN MUTLAK: ISOLASI DEPARTEMEN & LEVEL TANPA CELAH
         function renderDashboard() {
             let viewable = tasksData;
 
@@ -795,7 +796,7 @@
             const isDirUtama = isDirekturUtama();
             const isDir = isDirektur();
 
-            // MATRIKS ISOLASI TAMPILAN BERDASARKAN LEVEL & DEPARTEMEN
+            // KUNCI ISOLASI LINTAS DEPARTEMEN & HIERARKI LEVEL
             if (!isDirUtama && !isDir) {
                 viewable = viewable.filter(t => {
                     const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik']));
@@ -805,30 +806,44 @@
                     const tDiv = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']));
                     const tDept = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
 
-                    // 1. Diri Sendiri (Pemberi / Penerima) Selalu Bisa Lihat Tugasnya
+                    // 1. Jika tugas ditujukan ke atau dibuat oleh User yang login sendiri -> IZINKAN
                     if ((picNik !== '' && picNik === userNik) || (pmbNik !== '' && pmbNik === userNik) || (picNama !== '' && picNama.includes(userNama))) {
                         return true;
                     }
 
-                    // 2. ISOLASI DEPARTEMEN / DIVISI
-                    const isSameDeptOrDiv = myDivs.some(md => md !== '' && (tDiv.includes(md) || md.includes(tDiv) || tDept.includes(md) || md.includes(tDept) || tDept === userDept));
-                    if (!isSameDeptOrDiv) return false; // Blokir penuh jika beda dept/divisi
+                    // Cari Profil Akun PIC Penerima Tugas di MasterDatabase
+                    const picUserObj = masterUsers.find(u => {
+                        const uN = cleanString(u.nik || u.NIK);
+                        const uNm = cleanString(u.nama || u.Nama);
+                        return (picNik !== '' && uN === picNik) || (picNama !== '' && uNm.includes(picNama));
+                    });
 
-                    // Cari profil PIC penerima tugas untuk cek levelnya
-                    const picUserObj = masterUsers.find(u => cleanString(u.nik) === picNik || cleanString(u.nama) === picNama);
+                    // Ambil Dept & Divisi Asli dari PIC Penerima
+                    const targetPicDept = picUserObj ? cleanString(picUserObj.dept || picUserObj.Departemen) : tDept;
+                    const targetPicDivs = picUserObj ? (picUserObj.divisiList || [picUserObj.dept]).map(cleanString) : [tDiv];
+
+                    // 2. CEK ISOLASI DEPARTEMEN/DIVISI KETAT:
+                    // Apakah PIC Penerima berada di Divisi/Dept yang sama dengan User Login?
+                    const isSameScope = myDivs.some(md => md !== '' && (targetPicDivs.includes(md) || targetPicDept === md || md === targetPicDept)) || (userDept !== '' && targetPicDept === userDept);
+
+                    // JIKA BEDA DEPARTEMEN & DIVISI -> BLOKIR MUTLAK 100%!
+                    if (!isSameScope) {
+                        return false;
+                    }
+
+                    // 3. ATURAN HIERARKI LEVEL (Staf, SPV, Manager) Dalam Dept/Divisi Yang Sama
                     const picLevel = picUserObj ? cleanString(picUserObj.level || picUserObj.jabatan) : 'staf';
 
-                    // 3. ATURAN HIERARKI LEVEL (Staf, SPV, Manager)
                     if (userLevel.includes('staf')) {
-                        // Staf hanya bisa lihat tugas sendiri (sudah terfilter di poin 1)
+                        // Staf dilarang lihat tugas staf lain/atasan
                         return false;
                     } 
                     else if (userLevel.includes('spv') || userLevel.includes('pengawas') || userLevel.includes('supervisor')) {
-                        // SPV bisa lihat tugas Staf di bawah dept-nya
+                        // SPV hanya bisa lihat Staf di bawah dept-nya
                         return picLevel.includes('staf');
                     } 
                     else if (userLevel.includes('manajer') || userLevel.includes('manager')) {
-                        // Manager bisa lihat SPV & Staf di bawah divisinya
+                        // Manager hanya bisa lihat SPV & Staf di bawah divisinya
                         return picLevel.includes('staf') || picLevel.includes('spv') || picLevel.includes('pengawas') || picLevel.includes('supervisor');
                     }
 
