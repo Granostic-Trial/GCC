@@ -270,6 +270,7 @@
 
                     <div id="field-frekuensi" class="hidden">
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
+                        <!-- DAFTAR FREKUENSI LENGKAP 15 OPSI -->
                         <select id="task-frekuensi" onchange="handleFrekuensiChange()" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
                             <option value="Harian">Harian</option>
                             <option value="2 Harian">2 Harian</option>
@@ -470,7 +471,6 @@
             return '';
         }
 
-        // AKURASI KETAT: MENGGUNAKAN MODE text/plain AGAR BERHASIL TERHUBUNG KE GSHEET TANPA DIBLOKIR CORS
         async function handleLogin(e) {
             e.preventDefault();
             const nik = document.getElementById('login-nik').value.trim();
@@ -586,7 +586,7 @@
             updatePICOptions();
         }
 
-        // FOKUS PERBAIKAN: MEMASUKKAN MANAJER DIVISI KE DALAM DROPDOWN BERSAMA STAF DEPT
+        // PERBAIKAN UTAMA: DENGAN MEMADUKAN TIGA KRITERIA (DEPT/STAF, MANAJER DIVISI, DAN HIREARKI JABATAN)
         function updatePICOptions() {
             const selectedDivisi = cleanString(document.getElementById('task-divisi-target').value);
             const selectedDept = cleanString(document.getElementById('task-dept-target').value);
@@ -598,20 +598,21 @@
             masterUsers.forEach(u => {
                 const uNik = cleanString(u.nik || u.NIK);
                 const myNik = cleanString(currentUser.nik);
-                if (uNik === myNik) return; 
+                if (uNik === myNik) return; // Mencegah tugaskan diri sendiri
 
                 const uDept = cleanString(u.dept || u.Departemen);
                 const uJabatan = cleanString(u.jabatan || u.Jabatan);
-                const uDivisiList = String(u.divisiList || u.Divisi || u.divisi || '').toLowerCase();
+                const uLevel = cleanString(u.level || u.Level);
+                const uDivisiList = (u.divisiList || [u.dept]).map(cleanString);
 
-                // 1. Staf yang persis berada di Departemen terpilih (misal: Mikrobiologi)
-                const isDeptStaff = (uDept === selectedDept);
+                // KONDISI 1: Anggota/Staf yang ada di Dept target (Misal: Mikrobiologi)
+                const isExactDeptMember = (uDept === selectedDept);
 
-                // 2. Manajer yang membawahi Divisi tersebut (misal: AHW untuk Divisi Laboratorium)
-                const isDivisiManager = (uDivisiList.includes(selectedDivisi) || uDivisiList.includes(selectedDept)) && 
-                                        (uJabatan.includes('manajer') || uJabatan.includes('manager') || uJabatan.includes('direktur'));
+                // KONDISI 2: Pimpinan/Manajer yang membawahi Divisi target (Misal: AHW sbg Manajer Medis untuk Laboratorium)
+                const isDivisiManager = uDivisiList.includes(selectedDivisi) && 
+                                        (uLevel.includes('manajer') || uLevel.includes('manager') || uJabatan.includes('manajer') || uJabatan.includes('manager'));
 
-                if (isDeptStaff || isDivisiManager) {
+                if (isExactDeptMember || isDivisiManager) {
                     if (!validPegawai.some(p => cleanString(p.nik) === uNik)) {
                         validPegawai.push(u);
                     }
@@ -619,11 +620,7 @@
             });
 
             if (validPegawai.length === 0) {
-                validPegawai = masterUsers.filter(u => cleanString(u.dept) === selectedDept && cleanString(u.nik) !== cleanString(currentUser.nik));
-            }
-
-            if (validPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada pegawai/manajer sah di Dept ini</option>`;
+                picSelect.innerHTML = `<option value="">Tidak ada pimpinan/bawahan sah di Dept ini</option>`;
                 return;
             }
 
@@ -1001,6 +998,7 @@
             }
         }
 
+        // PERBAIKAN KALKULASI TARGET OTOMATIS BERDASARKAN KELIPATAN FREKUENSI
         function calculateAutoTargetDate(startDateStr, freq) {
             if (!startDateStr) return '';
             let d = new Date(startDateStr);
