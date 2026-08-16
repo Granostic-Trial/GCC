@@ -497,9 +497,15 @@
                     document.getElementById('login-view').classList.add('hidden');
                     document.getElementById('dashboard-view').classList.remove('hidden');
                     
+                    const uLvl = cleanString(currentUser.level || currentUser.jabatan);
+                    const isMgrKeAtas = uLvl.includes('manajer') || uLvl.includes('manager') || uLvl.includes('direksi') || uLvl.includes('direktur');
                     const userDivsStr = (currentUser.divisiList || [currentUser.dept]).join(', ');
-                    document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Dept: ${currentUser.dept} | Divisi: ${userDivsStr}`;
 
+                    if (isMgrKeAtas) {
+                    document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Divisi: ${userDivsStr}`;
+                } else {
+                    document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Dept: ${currentUser.dept} | Divisi: ${userDivsStr}`;
+                    }
                     setupMasterDataUI();
                     lucide.createIcons();
                     fetchDataFromGAS();
@@ -959,9 +965,17 @@
                 const pemberi = resolvePemberiNama(t);
                 const penerima = getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama', 'PIC_NIK', 'picNik']);
                 
-                const targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']) || '-';
+                const targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi', 'Divisi']);
                 const targetDept = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']);
-                const divisiDeptFormatted = `${targetDiv} / ${targetDept}`;
+
+                let divisiDeptFormatted = '-';
+                if (targetDiv && targetDept) {
+                divisiDeptFormatted = `${targetDiv} / ${targetDept}`;
+                } else if (targetDiv) {
+                divisiDeptFormatted = targetDiv;
+                }   else if (targetDept) {
+                ivisiDeptFormatted = targetDept;
+                }
 
                 const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']) || '-';
                 let status = getProp(t, ['Status', 'status']) || 'In Progress';
