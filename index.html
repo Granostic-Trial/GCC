@@ -603,7 +603,7 @@
             updatePICOptions();
         }
 
-        // MATRIKS PENUGASAN (PILIHAN PIC PENERIMA): DENGAN ISOLASI DEPT & HAK AKSES LEVEL
+        // MATRIKS PENUGASAN (PILIHAN PIC PENERIMA): DENGAN LOOKUP HIRARKI PENGAWAS & STAF
         function updatePICOptions() {
             const selectedDivisi = cleanString(document.getElementById('task-divisi-target').value);
             const selectedDept = cleanString(document.getElementById('task-dept-target').value);
@@ -614,6 +614,21 @@
             const myNik = cleanString(currentUser.nik);
             const isDirUtama = isDirekturUtama();
             const isDir = isDirektur();
+
+            // Ambil daftar Jabatan dari Master Hirearki yang membawahi/mengawasi Dept Target ini
+            const targetDeptHirearki = masterHirearki.filter(h => 
+                cleanString(h.Departemen || h.departemen) === selectedDept && 
+                cleanString(h.Divisi || h.divisi) === selectedDivisi
+            );
+
+            // Kumpulkan nama-nama Jabatan Atasan (Pengawas / Manajer / Atasan Level) yang berwenang atas Dept Target
+            const allowedJabatansForDept = new Set();
+            targetDeptHirearki.forEach(h => {
+                const atasanLvl = cleanString(h.AtasanLevel || h.atasanLevel);
+                const membutuhkan = cleanString(h.Membutuhkan || h.membutuhkan);
+                if (atasanLvl) allowedJabatansForDept.add(atasanLvl);
+                if (membutuhkan) allowedJabatansForDept.add(membutuhkan);
+            });
 
             masterUsers.forEach(u => {
                 const uNik = cleanString(u.nik || u.NIK);
@@ -629,14 +644,22 @@
                     if (uJabatan.includes('direktur utama') || uLevel.includes('direktur utama')) return;
                 }
 
-                // 1. Staf/SPV/Member yang berada di Dept Target (misal: Mikrobiologi)
+                // 1. Staf/Member yang berada persis di Dept Target (misal: MJA di Mikrobiologi)
                 const isExactDeptMember = (uDept === selectedDept);
 
                 // 2. Manajer yang membawahi Divisi tersebut (misal: AHW untuk Divisi Laboratorium)
                 const isDivisiManager = uDivisiList.includes(selectedDivisi) && 
                                         (uLevel.includes('manajer') || uLevel.includes('manager') || uJabatan.includes('manajer') || uJabatan.includes('manager'));
 
-                if (isExactDeptMember || isDivisiManager) {
+                // 3. Pengawas/Atasan yang secara Master Hirearki membawahi Dept Target (misal: DNI Pengawas Laboratorium untuk Mikrobiologi & Patologi Klinik)
+                let isSupervisorForDept = false;
+                allowedJabatansForDept.forEach(allowedJab => {
+                    if (allowedJab !== '' && (uJabatan.includes(allowedJab) || allowedJab.includes(uJabatan))) {
+                        isSupervisorForDept = true;
+                    }
+                });
+
+                if (isExactDeptMember || isDivisiManager || isSupervisorForDept) {
                     if (!validPegawai.some(p => cleanString(p.nik) === uNik)) {
                         validPegawai.push(u);
                     }
