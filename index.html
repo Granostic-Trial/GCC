@@ -499,7 +499,9 @@
                     
                     const uLvl = cleanString(currentUser.level || currentUser.jabatan);
                     const isMgrKeAtas = uLvl.includes('manajer') || uLvl.includes('manager') || uLvl.includes('direksi') || uLvl.includes('direktur');
-                    const userDivsStr = (currentUser.divisiList || [currentUser.dept]).join(', ');
+                    const userDivsStr = (currentUser.divisiList && currentUser.divisiList.length > 0) 
+    ? currentUser.divisiList.join(', ') 
+    : (currentUser.dept || '-');
 
                     if (isMgrKeAtas) {
                     document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Divisi: ${userDivsStr}`;
