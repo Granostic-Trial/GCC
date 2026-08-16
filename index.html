@@ -965,16 +965,20 @@
                 const pemberi = resolvePemberiNama(t);
                 const penerima = getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama', 'PIC_NIK', 'picNik']);
                 
-                const targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi', 'Divisi']);
+                const targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']);
                 const targetDept = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']);
 
+                // Logika aman: Ambil mana saja yang terisi (tidak kosong dan bukan '-')
+                const validDiv = (targetDiv && targetDiv !== '-') ? targetDiv : '';
+                const validDept = (targetDept && targetDept !== '-') ? targetDept : '';
+
                 let divisiDeptFormatted = '-';
-                if (targetDiv && targetDept) {
-                divisiDeptFormatted = `${targetDiv} / ${targetDept}`;
-                } else if (targetDiv) {
-                divisiDeptFormatted = targetDiv;
-                }   else if (targetDept) {
-                ivisiDeptFormatted = targetDept;
+                if (validDiv && validDept) {
+                divisiDeptFormatted = `${validDiv} / ${validDept}`;
+                } else if (validDiv) {
+                divisiDeptFormatted = validDiv;
+                } else if (validDept) {
+                divisiDeptFormatted = validDept;
                 }
 
                 const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']) || '-';
