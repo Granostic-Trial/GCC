@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Granostic Enterprise Command System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>Granostic Command System</title>
+    <!-- Versi library dikunci agar tampilan tidak berubah sendiri -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: { 
-                extend: { 
-                    colors: { 
-                        darkBg: '#0b0d12', 
-                        panelBg: '#13161f', 
-                        cardBg: '#1c202c', 
-                        borderDark: '#2a2f40', 
-                        brandPurple: '#6366f1' 
-                    } 
-                } 
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0b0d12',
+                        panelBg: '#13161f',
+                        cardBg: '#1c202c',
+                        borderDark: '#2a2f40',
+                        brandPurple: '#6366f1'
+                    }
+                }
             }
         }
     </script>
@@ -26,17 +27,29 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0b0d12; }
         ::-webkit-scrollbar-thumb { background: #2a2f40; border-radius: 4px; }
+        .row-flash { animation: flash 2.5s ease-out; }
+        @keyframes flash { 0%, 40% { background: rgba(99, 102, 241, .35); } 100% { background: transparent; } }
+        select option { background: #1c202c; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.8); }
     </style>
 </head>
 <body class="bg-darkBg text-gray-200 h-full font-sans flex flex-col antialiased">
 
     <script>
-        // URL WEB APP GAS PERMANEN MILIK YANG MULIA
+        // URL Web App Google Apps Script (deployment yang sama, URL tidak berubah)
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbz80x4uZ9nq9nMhOGX-J8PmMzzmajVsZh1zcQI2PvtxF2r3JiFWMvmaZqn_eRA4MI0K/exec';
     </script>
 
+    <!-- SPLASH: cek sesi tersimpan -->
+    <div id="splash-view" class="flex-1 flex items-center justify-center h-screen">
+        <div class="flex flex-col items-center gap-3 text-gray-400 text-xs">
+            <div class="w-8 h-8 border-2 border-brandPurple border-t-transparent rounded-full animate-spin"></div>
+            Memuat sesi...
+        </div>
+    </div>
+
     <!-- PORTAL LOGIN -->
-    <div id="login-view" class="flex-1 flex flex-col md:flex-row h-screen">
+    <div id="login-view" class="hidden flex-1 flex flex-col md:flex-row min-h-screen">
         <div class="md:w-1/2 bg-gradient-to-br from-indigo-950 via-slate-950 to-black p-10 flex flex-col justify-between border-r border-borderDark relative overflow-hidden">
             <div class="relative z-10 space-y-5 my-auto max-w-md">
                 <div class="mb-4">
@@ -53,7 +66,7 @@
                     <p class="text-xs text-gray-300 leading-relaxed">Menjadi fasilitas layanan kesehatan terpilih dan terpercaya.</p>
                 </div>
             </div>
-            <div class="relative z-10 text-[11px] text-gray-500 font-mono">
+            <div class="relative z-10 text-[11px] text-gray-500 font-mono mt-8">
                 &copy; 2026 PT Persada Medika Utama • Real-time GSheet Sync
             </div>
         </div>
@@ -65,70 +78,76 @@
                     <p class="text-xs text-gray-400 mt-1">Masukkan NIK dan Password terdaftar Anda.</p>
                 </div>
 
-                <div id="login-error" class="hidden bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs p-3 rounded-xl flex items-center justify-between">
-                    <span id="login-error-msg">NIK atau Password Salah!</span>
-                    <button onclick="document.getElementById('login-error').classList.add('hidden')">✕</button>
+                <div id="login-error" class="hidden bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs p-3 rounded-xl flex items-center justify-between gap-3">
+                    <span id="login-error-msg"></span>
+                    <button type="button" onclick="hide('login-error')">✕</button>
                 </div>
 
-                <form onsubmit="handleLogin(event)" class="space-y-4">
+                <form id="login-form" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">NIK (NOMOR INDUK KARYAWAN)</label>
-                        <input type="text" id="login-nik" required class="w-full bg-panelBg border border-borderDark rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brandPurple" placeholder="Masukkan NIK">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">NIK (Nomor Induk Karyawan)</label>
+                        <input type="text" id="login-nik" required autocomplete="username" class="w-full bg-panelBg border border-borderDark rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brandPurple" placeholder="Masukkan NIK">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">PASSWORD</label>
-                        <input type="password" id="login-pass" required class="w-full bg-panelBg border border-borderDark rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brandPurple" placeholder="••••••••">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Password</label>
+                        <input type="password" id="login-pass" required autocomplete="current-password" class="w-full bg-panelBg border border-borderDark rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-brandPurple" placeholder="••••••••">
                     </div>
-                    <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg text-xs tracking-wider uppercase">
+                    <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg text-xs tracking-wider uppercase disabled:opacity-60">
                         Masuk Secure Portal
                     </button>
+                    <div class="text-center">
+                        <button type="button" onclick="openForgotModal()" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold">Lupa password?</button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD SYSTEM -->
+    <!-- DASHBOARD -->
     <div id="dashboard-view" class="hidden flex-1 flex flex-col h-screen overflow-hidden">
-        <header class="bg-panelBg border-b border-borderDark px-6 py-3 flex justify-between items-center z-30 shrink-0">
-            <div class="flex items-center gap-3">
+        <header class="bg-panelBg border-b border-borderDark px-4 md:px-6 py-3 flex flex-wrap gap-3 justify-between items-center z-30 shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
                 <img src="https://lh3.googleusercontent.com/d/13fYVo8GG4_R75m5fcqNieWpTnePyB0cb" alt="Granostic Icon" class="h-8 w-auto object-contain">
-                <div>
+                <div class="min-w-0">
                     <h1 class="text-sm font-extrabold text-white">PT. PERSADA MEDIKA UTAMA</h1>
-                    <p class="text-[11px] text-indigo-400 font-mono" id="header-user-status">User: - | NIK: - | Jabatan: - | Dept: - | Divisi: -</p>
+                    <p class="text-[11px] text-indigo-400 font-mono truncate" id="header-user-status"></p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-2 md:gap-3">
                 <div class="relative">
-                    <button onclick="toggleNotifDropdown(event)" class="relative bg-cardBg border border-borderDark p-2 rounded-xl text-amber-400 hover:text-amber-300 transition flex items-center justify-center" title="Notifikasi Tugas">
+                    <button id="btn-notif" class="relative bg-cardBg border border-borderDark p-2 rounded-xl text-amber-400 hover:text-amber-300 transition flex items-center justify-center" title="Notifikasi Tugas">
                         <i data-lucide="bell" class="w-4 h-4"></i>
                         <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">0</span>
                     </button>
 
-                    <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-panelBg border border-borderDark rounded-2xl shadow-2xl z-50 overflow-hidden">
+                    <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[90vw] bg-panelBg border border-borderDark rounded-2xl shadow-2xl z-50 overflow-hidden">
                         <div class="p-3 border-b border-borderDark flex justify-between items-center bg-cardBg/80">
                             <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
                                 <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-400"></i> Notifikasi Tugas
                             </h4>
-                            <span id="notif-unread-count" class="text-[10px] text-indigo-400 font-bold">0 Belum Dibaca</span>
+                            <div class="flex items-center gap-2">
+                                <span id="notif-unread-count" class="text-[10px] text-indigo-400 font-bold">0 Belum Dibaca</span>
+                                <button id="btn-notif-readall" class="text-[10px] text-gray-400 hover:text-white font-bold" title="Tandai semua dibaca">
+                                    <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div id="notif-list" class="max-h-64 overflow-y-auto divide-y divide-borderDark/40">
-                        </div>
+                        <div id="notif-list" class="max-h-72 overflow-y-auto divide-y divide-borderDark/40"></div>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2 bg-cardBg border border-borderDark rounded-xl px-3 py-1.5">
                     <i data-lucide="filter" class="w-3.5 h-3.5 text-brandPurple"></i>
                     <span class="text-[10px] font-bold text-gray-400 uppercase">Divisi:</span>
-                    <select id="filter-divisi-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
-                    </select>
+                    <select id="filter-divisi" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer max-w-[160px]"></select>
                 </div>
 
                 <button onclick="openTaskModal()" class="bg-brandPurple hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Input Tugas
                 </button>
 
-                <button onclick="openChangePassModal()" class="bg-cardBg hover:bg-indigo-950/40 text-indigo-300 p-2 rounded-xl border border-borderDark transition" title="Pengaturan Sandi">
+                <button onclick="openPassModal()" class="bg-cardBg hover:bg-indigo-950/40 text-indigo-300 p-2 rounded-xl border border-borderDark transition" title="Ganti Password">
                     <i data-lucide="settings" class="w-4 h-4"></i>
                 </button>
 
@@ -138,64 +157,43 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
-            <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
-                <div class="bg-panelBg border border-borderDark p-3.5 rounded-2xl">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Tugas Aktif</p>
-                    <h3 id="stat-total" class="text-xl font-bold text-white mt-1">0</h3>
-                </div>
-                <div class="bg-panelBg border border-indigo-500/30 bg-indigo-950/10 p-3.5 rounded-2xl">
-                    <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">In Progress</p>
-                    <h3 id="stat-progress" class="text-xl font-bold text-indigo-400 mt-1">0</h3>
-                </div>
-                <div class="bg-panelBg border border-amber-500/30 bg-amber-950/10 p-3.5 rounded-2xl">
-                    <p class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Early Warning</p>
-                    <h3 id="stat-warning" class="text-xl font-bold text-amber-400 mt-1">0</h3>
-                </div>
-                <div class="bg-panelBg border border-orange-500/30 bg-orange-950/10 p-3.5 rounded-2xl">
-                    <p class="text-[10px] font-bold text-orange-400 uppercase tracking-wider">Late Warning</p>
-                    <h3 id="stat-late" class="text-xl font-bold text-orange-400 mt-1">0</h3>
-                </div>
-                <div class="bg-panelBg border border-emerald-500/30 bg-emerald-950/10 p-3.5 rounded-2xl">
-                    <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Selesai / Approved</p>
-                    <h3 id="stat-done" class="text-xl font-bold text-emerald-400 mt-1">0</h3>
-                </div>
-                <div class="bg-panelBg border border-rose-500/30 bg-rose-950/10 p-3.5 rounded-2xl">
-                    <p class="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Overdue / Terlewat</p>
-                    <h3 id="stat-overdue" class="text-xl font-bold text-rose-400 mt-1">0</h3>
-                </div>
-            </div>
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 max-w-7xl mx-auto w-full space-y-6">
+            <!-- Kartu statistik (klik untuk filter) -->
+            <div id="stats-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3"></div>
 
             <div class="bg-panelBg border border-borderDark rounded-2xl p-5 space-y-4">
-                <div class="flex justify-between items-center border-b border-borderDark pb-3">
+                <div class="flex flex-wrap gap-3 justify-between items-center border-b border-borderDark pb-3">
                     <h3 class="text-sm font-bold text-white flex items-center gap-2">
                         <i data-lucide="list-todo" class="w-4 h-4 text-brandPurple"></i> Daftar Tugas & Approval Berjenjang
                     </h3>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                         <div class="flex items-center gap-1.5 bg-cardBg border border-borderDark rounded-xl px-2.5 py-1.5">
                             <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
                             <span class="text-[10px] font-bold text-gray-400 uppercase">Jenis:</span>
-                            <select id="filter-jenis-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
-                                <option value="ALL" class="bg-cardBg">Semua Jenis</option>
-                                <option value="Project" class="bg-cardBg">Project</option>
-                                <option value="Rutin" class="bg-cardBg">Rutinan</option>
+                            <select id="filter-jenis" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
+                                <option value="ALL">Semua Jenis</option>
+                                <option value="Project">Project</option>
+                                <option value="Rutin">Rutin</option>
                             </select>
                         </div>
 
                         <div class="flex items-center gap-1.5 bg-cardBg border border-borderDark rounded-xl px-2.5 py-1.5">
                             <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-indigo-400"></i>
                             <span class="text-[10px] font-bold text-gray-400 uppercase">Status:</span>
-                            <select id="filter-status-header" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
-                                <option value="ALL" class="bg-cardBg">Semua Status</option>
-                                <option value="PROGRESS" class="bg-cardBg">In Progress / Menunggu Verif</option>
-                                <option value="SELESAI" class="bg-cardBg">Selesai / Approved</option>
-                                <option value="OVERDUE" class="bg-cardBg">Overdue / Terlewat</option>
+                            <select id="filter-status" class="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer">
+                                <option value="ALL">Semua Status</option>
+                                <option value="progress">In Progress</option>
+                                <option value="early">Early Warning</option>
+                                <option value="late">Late Warning</option>
+                                <option value="verif">Menunggu Verifikasi</option>
+                                <option value="overdue">Overdue</option>
+                                <option value="selesai">Selesai</option>
                             </select>
                         </div>
 
-                        <button onclick="fetchDataFromGAS()" class="text-xs bg-cardBg px-3 py-1.5 rounded-xl border border-borderDark hover:bg-borderDark text-gray-300 flex items-center gap-1.5 font-bold transition">
-                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Data Tugas
+                        <button id="btn-refresh" onclick="fetchTasks(true)" class="text-xs bg-cardBg px-3 py-1.5 rounded-xl border border-borderDark hover:bg-borderDark text-gray-300 flex items-center gap-1.5 font-bold transition">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Data
                         </button>
                     </div>
                 </div>
@@ -206,87 +204,63 @@
                             <tr>
                                 <th class="py-3 px-4">ID & Jenis</th>
                                 <th class="py-3 px-4">Judul Pekerjaan</th>
-                                <th class="py-3 px-4">Pemberi ➔ PIC Target</th>
-                                <th class="py-3 px-4">Divisi / Dept Tujuan</th>
+                                <th class="py-3 px-4">Pemberi ➔ PIC</th>
+                                <th class="py-3 px-4">Divisi / Dept</th>
                                 <th class="py-3 px-4">Target Deadline</th>
                                 <th class="py-3 px-4">Status & Progress</th>
-                                <th class="py-3 px-4 text-right">Aksi Update</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody id="tasks-tbody" class="divide-y divide-borderDark">
-                        </tbody>
+                        <tbody id="tasks-tbody" class="divide-y divide-borderDark"></tbody>
                     </table>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- MODAL INPUT TUGAS / UBAH TUGAS -->
+    <!-- MODAL INPUT / UBAH TUGAS -->
     <div id="modal-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto relative">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
-                <h3 id="modal-task-title-ui" class="font-bold text-sm text-white flex items-center gap-2">
-                    <i data-lucide="plus-circle" class="w-4 h-4 text-brandPurple"></i> Form Input Tugas Baru
-                </h3>
-                <button onclick="closeTaskModal()" class="text-gray-400 hover:text-white">✕</button>
+                <h3 id="modal-task-title" class="font-bold text-sm text-white flex items-center gap-2"></h3>
+                <button type="button" onclick="hide('modal-task')" class="text-gray-400 hover:text-white">✕</button>
             </div>
 
-            <form onsubmit="handleSaveOrEditTask(event)" class="space-y-3 text-xs">
-                <input type="hidden" id="task-id-edit" value="">
-                
+            <form id="task-form" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-gray-300 mb-1">Judul Pekerjaan</label>
-                    <input type="text" id="task-title" required placeholder="Contoh: Renovasi Gedung / Laporan Bulanan" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                    <input type="text" id="task-title" required maxlength="200" placeholder="Contoh: Renovasi Gedung / Laporan Bulanan" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
                 </div>
 
                 <div class="space-y-2 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block font-semibold text-indigo-400 mb-1">1. Pilih Divisi Target:</label>
-                            <select id="task-divisi-target" onchange="updateDeptOptions()" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
-                            </select>
+                            <label class="block font-semibold text-indigo-400 mb-1">1. Divisi</label>
+                            <select id="task-divisi" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold disabled:opacity-70"></select>
                         </div>
                         <div>
-                            <label class="block font-semibold text-indigo-400 mb-1">2. Pilih Dept Target:</label>
-                            <select id="task-dept-target" onchange="updatePICOptions()" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
-                            </select>
+                            <label class="block font-semibold text-indigo-400 mb-1">2. Departemen</label>
+                            <select id="task-dept" class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold disabled:opacity-70"></select>
                         </div>
                     </div>
                     <div>
-                        <label class="block font-semibold text-emerald-400 mb-1">3. PIC Penerima (Bawahan / Rekan Sah):</label>
-                        <select id="task-pic-target" required class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold">
-                        </select>
+                        <label class="block font-semibold text-emerald-400 mb-1">3. PIC Penerima</label>
+                        <select id="task-pic" required class="w-full bg-panelBg border border-borderDark rounded-xl p-2 text-white focus:outline-none font-bold disabled:opacity-70"></select>
+                        <p id="task-pic-hint" class="text-[10px] text-gray-500 mt-1"></p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block font-semibold text-gray-300 mb-1">Jenis Tugas</label>
-                        <select id="task-jenis" onchange="toggleJenisTugasField()" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
-                            <option value="Project">Project (Sekali Habis)</option>
-                            <option value="Rutin">Rutinan (Looping)</option>
+                        <select id="task-jenis" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none disabled:opacity-70">
+                            <option value="Project">Project (Sekali Selesai)</option>
+                            <option value="Rutin">Rutin (Berulang Otomatis)</option>
                         </select>
                     </div>
-
                     <div id="field-frekuensi" class="hidden">
                         <label class="block font-semibold text-gray-300 mb-1">Frekuensi Rutin</label>
-                        <select id="task-frekuensi" onchange="handleFrekuensiChange()" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none font-bold text-indigo-300">
-                            <option value="Harian">Harian</option>
-                            <option value="2 Harian">2 Harian</option>
-                            <option value="3 Harian">3 Harian</option>
-                            <option value="4 Harian">4 Harian</option>
-                            <option value="5 Harian">5 Harian</option>
-                            <option value="6 Harian">6 Harian</option>
-                            <option value="Mingguan">Mingguan</option>
-                            <option value="2 Mingguan">2 Mingguan</option>
-                            <option value="3 Mingguan">3 Mingguan</option>
-                            <option value="Bulanan">Bulanan</option>
-                            <option value="2 Bulanan">2 Bulanan</option>
-                            <option value="3 Bulanan">3 Bulanan</option>
-                            <option value="4 Bulanan">4 Bulanan</option>
-                            <option value="6 Bulanan">6 Bulanan</option>
-                            <option value="Tahunan">Tahunan</option>
-                        </select>
+                        <select id="task-frekuensi" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 focus:outline-none font-bold text-indigo-300"></select>
                     </div>
                 </div>
 
@@ -296,1139 +270,1245 @@
                         <input type="date" id="task-start" required class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
                     </div>
                     <div id="wrapper-task-end">
-                        <label class="block font-semibold text-gray-300 mb-1">Tanggal Target (Otomatis jika Rutin)</label>
+                        <label class="block font-semibold text-gray-300 mb-1">Tanggal Target</label>
                         <input type="date" id="task-end" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
+                    </div>
+                    <div id="wrapper-rutin-preview" class="hidden">
+                        <label class="block font-semibold text-gray-300 mb-1">Target Siklus Pertama</label>
+                        <div id="rutin-preview" class="w-full bg-cardBg/50 border border-dashed border-borderDark rounded-xl p-2.5 text-indigo-300 font-mono font-bold">-</div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block font-semibold text-rose-400 mb-1">Late Warning (Hari)</label>
-                        <input type="number" id="task-late" required value="1" min="1" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
+                        <label class="block font-semibold text-amber-400 mb-1">Early Warning (H-)</label>
+                        <input type="number" id="task-early" required value="7" min="0" max="3650" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none read-only:opacity-50">
+                        <p class="text-[10px] text-gray-500 mt-1">Peringatan awal, dihitung hari sebelum deadline.</p>
                     </div>
                     <div>
-                        <label class="block font-semibold text-amber-400 mb-1">Early Warning (Hari)</label>
-                        <input type="number" id="task-early" required value="3" min="0" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none">
+                        <label class="block font-semibold text-orange-400 mb-1">Late Warning (H-)</label>
+                        <input type="number" id="task-late" required value="3" min="0" max="3650" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none read-only:opacity-50">
+                        <p class="text-[10px] text-gray-500 mt-1">Peringatan lapis kedua, harus ≤ Early Warning.</p>
                     </div>
                 </div>
 
                 <div id="wrapper-catatan-baru">
-                    <label class="block font-semibold text-gray-300 mb-1">Catatan Bebas / Instruksi Khusus</label>
-                    <textarea id="task-catatan" rows="2" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none" placeholder="Tuliskan instruksi pekerjaan secara detail..."></textarea>
+                    <label class="block font-semibold text-gray-300 mb-1">Catatan / Instruksi Khusus</label>
+                    <textarea id="task-catatan" rows="2" maxlength="2000" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none" placeholder="Tuliskan instruksi pekerjaan secara detail..."></textarea>
                 </div>
 
+                <div id="task-form-error" class="hidden text-rose-400 text-[11px] font-bold"></div>
+
                 <div class="flex justify-end gap-2 pt-2 border-t border-borderDark">
-                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
-                    <button type="submit" id="btn-save-task" class="px-4 py-2 bg-brandPurple text-white rounded-xl font-bold shadow">Simpan Tugas</button>
+                    <button type="button" onclick="hide('modal-task')" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
+                    <button type="submit" id="btn-save-task" class="px-4 py-2 bg-brandPurple hover:bg-indigo-500 text-white rounded-xl font-bold shadow disabled:opacity-60">Simpan Tugas</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL UPDATE PROGRESS & DOKUMEN -->
-    <div id="modal-update-task" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+    <!-- MODAL DETAIL TUGAS -->
+    <div id="modal-detail" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto relative">
-            <div class="flex justify-between items-center pb-2 border-b border-borderDark">
+            <div class="flex justify-between items-center pb-2 border-b border-borderDark gap-2">
                 <h3 class="font-bold text-sm text-white flex items-center gap-2">
-                    <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Detail Tugas, Feedback & Report Dokumen
+                    <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Detail Tugas, Feedback & Dokumen
                 </h3>
                 <div class="flex items-center gap-2">
-                    <button id="btn-edit-mode" onclick="openEditTaskModalFromDetail()" class="text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-xl shadow font-bold flex items-center gap-1 transition">
-                        <i data-lucide="edit-3" class="w-3 h-3"></i> Ubah Detail Tugas
+                    <button id="btn-routine-toggle" class="hidden text-[10px] bg-cardBg hover:bg-borderDark border border-borderDark text-gray-200 px-2.5 py-1 rounded-xl font-bold items-center gap-1 transition"></button>
+                    <button id="btn-edit-task" class="hidden text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-xl shadow font-bold items-center gap-1 transition">
+                        <i data-lucide="edit-3" class="w-3 h-3"></i> Ubah Detail
                     </button>
-                    <button onclick="document.getElementById('modal-update-task').classList.add('hidden')" class="text-gray-400 hover:text-white ml-2">✕</button>
+                    <button type="button" onclick="hide('modal-detail')" class="text-gray-400 hover:text-white ml-1">✕</button>
                 </div>
             </div>
 
-            <form onsubmit="handleSaveTaskUpdate(event)" class="space-y-4 text-xs">
-                <input type="hidden" id="update-task-id">
-                <input type="hidden" id="selected-status-btn" value="In Progress">
+            <div>
+                <p id="detail-id" class="text-[10px] font-mono text-indigo-400 font-bold"></p>
+                <p id="detail-title" class="font-extrabold text-white text-sm mt-0.5 break-words"></p>
+            </div>
 
-                <div>
-                    <label class="block font-bold text-indigo-300 mb-1">Judul Pekerjaan:</label>
-                    <p id="update-task-title" class="font-extrabold text-white bg-cardBg p-3 rounded-xl border border-borderDark text-sm"></p>
-                </div>
+            <div id="detail-info" class="grid grid-cols-2 md:grid-cols-3 gap-2 text-[11px]"></div>
 
-                <div class="bg-cardBg/80 p-3 rounded-xl border border-borderDark space-y-1.5">
-                    <label class="block font-bold text-gray-300 uppercase text-[10px] tracking-wider">Pilih Status Laporan Tugas:</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button type="button" id="btn-status-progress" onclick="selectTaskStatus('In Progress')" class="py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition">
-                            <i data-lucide="clock" class="w-3.5 h-3.5"></i> In Progress
-                        </button>
-                        <button type="button" id="btn-status-selesai" onclick="selectTaskStatus('Selesai')" class="py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition">
-                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Selesai
-                        </button>
-                        <button type="button" id="btn-status-overdue" onclick="selectTaskStatus('Overdue')" class="py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition">
-                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Overdue
-                        </button>
-                    </div>
-                </div>
+            <div id="detail-action" class="space-y-3 text-xs"></div>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-gray-300 mb-1">Progress Kerja (%)</label>
-                        <input type="number" id="update-progress" min="0" max="100" required class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white font-bold text-emerald-400 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-gray-300 mb-1">Unggah Lampiran Dokumen Baru (Maks 5MB)</label>
-                        <input type="file" id="update-file" class="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brandPurple file:text-white hover:file:bg-indigo-500 cursor-pointer">
-                    </div>
-                </div>
+            <div class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
+                <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
+                    <i data-lucide="paperclip" class="w-3.5 h-3.5"></i> Dokumen Lampiran
+                </label>
+                <div id="detail-files" class="space-y-1 max-h-32 overflow-y-auto"></div>
+            </div>
 
-                <div>
-                    <label class="block font-semibold text-gray-300 mb-1">Tambah Catatan / Feedback Baru</label>
-                    <textarea id="update-catatan" rows="2" placeholder="Tuliskan perkembangan tugas, kendala, atau revisi..." class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none"></textarea>
-                </div>
+            <div id="detail-routine-wrap" class="hidden space-y-1.5 bg-indigo-950/20 p-3 rounded-xl border border-indigo-500/30">
+                <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Riwayat Siklus Rutin (2 Bulan Terakhir)
+                </label>
+                <div id="detail-routine" class="space-y-1 max-h-32 overflow-y-auto"></div>
+            </div>
 
-                <div id="existing-doc-container" class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
-                    <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
-                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i> Riwayat Dokumen Lampiran Tugas Ini:
-                    </label>
-                    <div id="existing-doc-list" class="space-y-1 max-h-24 overflow-y-auto">
-                    </div>
-                </div>
+            <div class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
+                <label class="block font-bold text-amber-400 flex items-center gap-1.5 text-xs">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Histori Catatan & Feedback
+                </label>
+                <div id="detail-notes" class="bg-panelBg p-3 rounded-xl border border-borderDark/60 max-h-48 overflow-y-auto text-[11px] font-mono whitespace-pre-wrap break-words text-gray-300"></div>
+            </div>
 
-                <div id="routine-history-container" class="hidden space-y-1.5 bg-indigo-950/20 p-3 rounded-xl border border-indigo-500/30">
-                    <label class="block font-bold text-indigo-400 flex items-center gap-1.5 text-xs">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Histori Pengerjaan Rutin (2 Bulan Terakhir):
-                    </label>
-                    <div id="routine-history-list" class="space-y-1 max-h-32 overflow-y-auto">
-                    </div>
-                </div>
-
-                <div class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
-                    <label class="block font-bold text-amber-400 flex items-center gap-1.5 text-xs">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Histori Feedback & Catatan Laporan:
-                    </label>
-                    <div id="feedback-history-list" class="bg-panelBg p-3 rounded-xl border border-borderDark/60 max-h-40 overflow-y-auto text-[11px] space-y-2 font-mono whitespace-pre-wrap text-gray-300">
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-2 pt-2 border-t border-borderDark">
-                    <button type="button" onclick="document.getElementById('modal-update-task').classList.add('hidden')" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
-                    <button type="submit" id="btn-save-update" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow flex items-center gap-1.5">
-                        <i data-lucide="save" class="w-4 h-4"></i> Simpan Progress & Feedback
-                    </button>
-                </div>
-            </form>
+            <div class="space-y-1.5 bg-cardBg/60 p-3 rounded-xl border border-borderDark">
+                <label class="block font-bold text-gray-300 flex items-center gap-1.5 text-xs">
+                    <i data-lucide="history" class="w-3.5 h-3.5"></i> Riwayat Aktivitas
+                </label>
+                <div id="detail-log" class="max-h-48 overflow-y-auto space-y-1 text-[10px]"></div>
+            </div>
         </div>
     </div>
 
-    <!-- MODAL UBAH PASSWORD -->
-    <div id="modal-changepass" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+    <!-- MODAL GANTI PASSWORD (verifikasi email) -->
+    <div id="modal-pass" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-md p-6 space-y-4">
             <div class="flex justify-between items-center pb-2 border-b border-borderDark">
                 <h3 class="font-bold text-sm text-white flex items-center gap-2">
-                    <i data-lucide="settings" class="w-4 h-4 text-brandPurple"></i> Pengaturan Sandi / Password
+                    <i data-lucide="key-round" class="w-4 h-4 text-brandPurple"></i> Ganti Password
                 </h3>
-                <button onclick="document.getElementById('modal-changepass').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
+                <button type="button" onclick="hide('modal-pass')" class="text-gray-400 hover:text-white">✕</button>
             </div>
 
-            <form onsubmit="handleChangePassword(event)" class="space-y-3 text-xs">
+            <form id="pass-step1" class="space-y-3 text-xs">
+                <p class="text-[11px] text-gray-400">Langkah 1 dari 2: masukkan password lama. Kode verifikasi akan dikirim ke email pribadi Anda.</p>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Password Lama</label>
+                    <input type="password" id="pass-old" required autocomplete="current-password" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-borderDark">
+                    <button type="button" onclick="hide('modal-pass')" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
+                    <button type="submit" id="btn-pass-otp" class="px-4 py-2 bg-brandPurple hover:bg-indigo-500 text-white rounded-xl font-bold shadow flex items-center gap-1.5 disabled:opacity-60">
+                        <i data-lucide="mail" class="w-3.5 h-3.5"></i> Kirim Kode
+                    </button>
+                </div>
+            </form>
+
+            <form id="pass-step2" class="hidden space-y-3 text-xs">
+                <p class="text-[11px] text-gray-400">Langkah 2 dari 2: kode dikirim ke <span id="pass-email" class="text-indigo-300 font-bold"></span>.</p>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Kode Verifikasi (6 digit)</label>
+                    <input type="text" id="pass-otp" required inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white font-mono tracking-[0.4em] text-center focus:outline-none focus:border-brandPurple">
+                </div>
                 <div>
                     <label class="block font-semibold text-gray-300 mb-1">Password Baru</label>
-                    <input type="password" id="pass-new" required placeholder="Masukkan password baru" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                    <input type="password" id="pass-new" required autocomplete="new-password" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                    <p class="text-[10px] text-gray-500 mt-1">Minimal 8 karakter, kombinasi huruf dan angka.</p>
                 </div>
                 <div>
                     <label class="block font-semibold text-gray-300 mb-1">Konfirmasi Password Baru</label>
-                    <input type="password" id="pass-confirm" required placeholder="Ketik ulang password baru" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                    <input type="password" id="pass-confirm" required autocomplete="new-password" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
                 </div>
-
-                <div id="pass-error" class="hidden text-rose-400 text-[11px] font-bold">Password konfirmasi tidak cocok!</div>
-
-                <div class="flex justify-end gap-2 pt-2 border-t border-borderDark">
-                    <button type="button" onclick="document.getElementById('modal-changepass').classList.add('hidden')" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
-                    <button type="submit" id="btn-pass-submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow">Perbarui Sandi</button>
+                <div class="flex justify-between items-center gap-2 pt-2 border-t border-borderDark">
+                    <button type="button" id="btn-pass-resend" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold">Kirim ulang kode</button>
+                    <button type="submit" id="btn-pass-save" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow disabled:opacity-60">Perbarui Password</button>
                 </div>
             </form>
+            <div id="pass-error" class="hidden text-rose-400 text-[11px] font-bold"></div>
         </div>
     </div>
 
-    <!-- SCRIPT LOGIKA UTAMA -->
+    <!-- MODAL LUPA PASSWORD -->
+    <div id="modal-forgot" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-panelBg border border-borderDark rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-borderDark">
+                <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                    <i data-lucide="lock" class="w-4 h-4 text-brandPurple"></i> Reset Password
+                </h3>
+                <button type="button" onclick="hide('modal-forgot')" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            <form id="forgot-step1" class="space-y-3 text-xs">
+                <p class="text-[11px] text-gray-400">Masukkan NIK Anda. Kode verifikasi akan dikirim ke email pribadi yang terdaftar.</p>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">NIK</label>
+                    <input type="text" id="forgot-nik" required class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-borderDark">
+                    <button type="button" onclick="hide('modal-forgot')" class="px-4 py-2 bg-cardBg rounded-xl text-gray-300">Batal</button>
+                    <button type="submit" id="btn-forgot-otp" class="px-4 py-2 bg-brandPurple hover:bg-indigo-500 text-white rounded-xl font-bold shadow flex items-center gap-1.5 disabled:opacity-60">
+                        <i data-lucide="mail" class="w-3.5 h-3.5"></i> Kirim Kode
+                    </button>
+                </div>
+            </form>
+
+            <form id="forgot-step2" class="hidden space-y-3 text-xs">
+                <p class="text-[11px] text-gray-400">Kode dikirim ke <span id="forgot-email" class="text-indigo-300 font-bold"></span>.</p>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Kode Verifikasi (6 digit)</label>
+                    <input type="text" id="forgot-otp" required inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white font-mono tracking-[0.4em] text-center focus:outline-none focus:border-brandPurple">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Password Baru</label>
+                    <input type="password" id="forgot-new" required autocomplete="new-password" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                    <p class="text-[10px] text-gray-500 mt-1">Minimal 8 karakter, kombinasi huruf dan angka.</p>
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Konfirmasi Password Baru</label>
+                    <input type="password" id="forgot-confirm" required autocomplete="new-password" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none focus:border-brandPurple">
+                </div>
+                <div class="flex justify-between items-center gap-2 pt-2 border-t border-borderDark">
+                    <button type="button" id="btn-forgot-resend" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold">Kirim ulang kode</button>
+                    <button type="submit" id="btn-forgot-save" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow disabled:opacity-60">Reset Password</button>
+                </div>
+            </form>
+            <div id="forgot-error" class="hidden text-rose-400 text-[11px] font-bold"></div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast-wrap" class="fixed bottom-4 right-4 z-[60] space-y-2 max-w-sm"></div>
+
     <script>
-        let currentUser = null;
-        let masterUsers = [];
-        let masterHirearki = [];
-        let tasksData = [];
-        let readNotifications = JSON.parse(localStorage.getItem('read_notifs') || '[]');
+    // =========================================================
+    // STATE & UTILITAS
+    // =========================================================
+    const STATUS = { PROGRESS: 'In Progress', VERIF: 'Menunggu Verifikasi', DONE: 'Selesai' };
+    const TOKEN_KEY = 'gcs_token';
+    const state = {
+        token: null, user: null, assignable: [], divisiAll: [], frekuensiList: [],
+        tasks: [], today: '', currentTaskId: null, editingTaskId: null, oldPass: '', forgotNik: ''
+    };
 
-        function cleanString(str) {
-            return String(str || '').toLowerCase().trim();
-        }
+    const $ = (id) => document.getElementById(id);
+    const show = (id) => $(id).classList.remove('hidden');
+    const hide = (id) => $(id).classList.add('hidden');
+    const lc = (s) => String(s ?? '').toLowerCase().trim();
 
-        function getProp(obj, keys) {
-            if (!obj) return '';
-            const objKeys = Object.keys(obj);
-            for (let key of keys) {
-                const targetClean = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-                for (let actualKey of objKeys) {
-                    if (actualKey.toLowerCase().replace(/[^a-z0-9]/g, '') === targetClean) {
-                        return obj[actualKey] !== undefined ? String(obj[actualKey]).trim() : '';
-                    }
-                }
-            }
-            return '';
-        }
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"'`]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]));
+    }
 
-        async function handleLogin(e) {
-            e.preventDefault();
-            const nik = document.getElementById('login-nik').value.trim();
-            const pass = document.getElementById('login-pass').value.trim();
-            const errBox = document.getElementById('login-error');
-            const btn = document.getElementById('btn-login');
+    function icons() { if (window.lucide) lucide.createIcons(); }
 
-            errBox.classList.add('hidden');
+    function storage(op, key, val) {
+        try {
+            if (op === 'get') return localStorage.getItem(key);
+            if (op === 'set') localStorage.setItem(key, val);
+            if (op === 'del') localStorage.removeItem(key);
+        } catch (e) { return null; }
+    }
+
+    function toast(msg, type = 'success') {
+        const colors = {
+            success: 'bg-emerald-950/95 border-emerald-500/60 text-emerald-200',
+            error: 'bg-rose-950/95 border-rose-500/60 text-rose-200',
+            info: 'bg-indigo-950/95 border-indigo-500/60 text-indigo-200'
+        };
+        const el = document.createElement('div');
+        el.className = `border rounded-xl px-4 py-3 text-xs font-bold shadow-2xl ${colors[type] || colors.info}`;
+        el.textContent = msg;
+        $('toast-wrap').appendChild(el);
+        setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; }, 3800);
+        setTimeout(() => el.remove(), 4300);
+    }
+
+    function setBusy(btn, busy, label) {
+        if (!btn) return;
+        if (busy) {
+            btn.dataset.orig = btn.innerHTML;
             btn.disabled = true;
-            btn.innerText = 'MEMVERIFIKASI...';
-
-            try {
-                const response = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'login', nik: nik, password: pass })
-                });
-                const res = await response.json();
-
-                if (res.status === 'success') {
-                    currentUser = res.user;
-                    masterUsers = res.masterUsers || [];
-                    masterHirearki = res.masterHirearki || [];
-
-                    document.getElementById('login-view').classList.add('hidden');
-                    document.getElementById('dashboard-view').classList.remove('hidden');
-                    
-                    const uLvl = cleanString(currentUser.level || currentUser.jabatan);
-                    const isMgrKeAtas = uLvl.includes('manajer') || uLvl.includes('manager') || uLvl.includes('direksi') || uLvl.includes('direktur');
-                    const userDivsStr = (currentUser.divisiList && currentUser.divisiList.length > 0) 
-    ? currentUser.divisiList.join(', ') 
-    : (currentUser.dept || '-');
-
-                    if (isMgrKeAtas) {
-                    document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Divisi: ${userDivsStr}`;
-                } else {
-                    document.getElementById('header-user-status').innerText = `User: ${currentUser.nama} | NIK: ${currentUser.nik} | Jabatan: ${currentUser.jabatan} | Dept: ${currentUser.dept} | Divisi: ${userDivsStr}`;
-                    }
-                    setupMasterDataUI();
-                    lucide.createIcons();
-                    fetchDataFromGAS();
-                } else {
-                    document.getElementById('login-error-msg').innerText = res.message || 'NIK atau Password tidak terdaftar!';
-                    errBox.classList.remove('hidden');
-                }
-            } catch (err) {
-                console.error('Login Error:', err);
-                document.getElementById('login-error-msg').innerText = 'Gagal terhubung ke GSheet! Periksa deployment Apps Script.';
-                errBox.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'MASUK SECURE PORTAL';
-            }
+            btn.textContent = label || 'Memproses...';
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.orig) btn.innerHTML = btn.dataset.orig;
+            icons();
         }
+    }
 
-        // FUNGSI CEK LEVEL DIREKSI
-        function isDirekturUtama() {
-            const j = cleanString(currentUser.jabatan);
-            const l = cleanString(currentUser.level);
-            return j.includes('direktur utama') || l.includes('direktur utama') || currentUser.rank === 1;
-        }
+    function showError(id, msg) {
+        const el = $(id);
+        if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    }
 
-        function isDirektur() {
-            const j = cleanString(currentUser.jabatan);
-            const l = cleanString(currentUser.level);
-            return j.includes('direktur') || l.includes('direksi');
-        }
-
-        function setupMasterDataUI() {
-            const isDirUtama = isDirekturUtama();
-            const isDir = isDirektur();
-            const allDivisiList = [...new Set(masterHirearki.map(h => String(h.Divisi || h.divisi || '').trim()).filter(Boolean))];
-            
-            const headerDivisiSelect = document.getElementById('filter-divisi-header');
-            headerDivisiSelect.innerHTML = '';
-
-            if (isDirUtama || isDir) {
-                headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Semua Divisi (Global)</option>`;
-                allDivisiList.forEach(d => {
-                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
-                });
-                headerDivisiSelect.disabled = false;
-            } else {
-                const userDivs = currentUser.divisiList || [currentUser.dept];
-                headerDivisiSelect.innerHTML = `<option value="ALL" class="bg-cardBg">🏛️ Divisi Saya</option>`;
-                userDivs.forEach(d => {
-                    headerDivisiSelect.innerHTML += `<option value="${d}" class="bg-cardBg">${d}</option>`;
-                });
-                headerDivisiSelect.disabled = false;
-            }
-
-            const taskDivisiSelect = document.getElementById('task-divisi-target');
-            taskDivisiSelect.innerHTML = '';
-
-            if (isDirUtama || isDir) {
-                allDivisiList.forEach(d => {
-                    taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
-                });
-                taskDivisiSelect.disabled = false;
-            } else {
-                const userDivs = currentUser.divisiList || [currentUser.dept];
-                userDivs.forEach(d => {
-                    taskDivisiSelect.innerHTML += `<option value="${d}">${d}</option>`;
-                });
-                taskDivisiSelect.disabled = false;
-            }
-
-            updateDeptOptions();
-        }
-
-        function updateDeptOptions() {
-            const selectedDivisi = cleanString(document.getElementById('task-divisi-target').value);
-            const taskDeptSelect = document.getElementById('task-dept-target');
-            taskDeptSelect.innerHTML = '';
-
-            const deptsInDivisi = [...new Set(
-                masterHirearki
-                    .filter(h => cleanString(h.Divisi || h.divisi) === selectedDivisi)
-                    .map(h => String(h.Departemen || h.departemen || '').trim())
-                    .filter(Boolean)
-            )];
-
-            if (deptsInDivisi.length === 0) {
-                taskDeptSelect.innerHTML = `<option value="${currentUser.dept}">${currentUser.dept}</option>`;
-            } else {
-                deptsInDivisi.forEach(d => {
-                    taskDeptSelect.innerHTML += `<option value="${d}">${d}</option>`;
-                });
-            }
-
-            updatePICOptions();
-        }
-
-        // MATRIKS PENUGASAN (PILIHAN PIC PENERIMA): DENGAN LOOKUP HIRARKI PENGAWAS & STAF
-        function updatePICOptions() {
-            const selectedDivisi = cleanString(document.getElementById('task-divisi-target').value);
-            const selectedDept = cleanString(document.getElementById('task-dept-target').value);
-            const picSelect = document.getElementById('task-pic-target');
-            picSelect.innerHTML = '';
-
-            let validPegawai = [];
-            const myNik = cleanString(currentUser.nik);
-            const isDirUtama = isDirekturUtama();
-            const isDir = isDirektur();
-
-            // Ambil daftar Jabatan dari Master Hirearki yang membawahi/mengawasi Dept Target ini
-            const targetDeptHirearki = masterHirearki.filter(h => 
-                cleanString(h.Departemen || h.departemen) === selectedDept && 
-                cleanString(h.Divisi || h.divisi) === selectedDivisi
-            );
-
-            // Kumpulkan nama-nama Jabatan Atasan (Pengawas / Manajer / Atasan Level) yang berwenang atas Dept Target
-            const allowedJabatansForDept = new Set();
-            targetDeptHirearki.forEach(h => {
-                const atasanLvl = cleanString(h.AtasanLevel || h.atasanLevel);
-                const membutuhkan = cleanString(h.Membutuhkan || h.membutuhkan);
-                if (atasanLvl) allowedJabatansForDept.add(atasanLvl);
-                if (membutuhkan) allowedJabatansForDept.add(membutuhkan);
+    // Semua komunikasi ke server lewat fungsi ini. Token sesi ikut dikirim.
+    async function api(action, data = {}) {
+        let res;
+        try {
+            const r = await fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action, token: state.token, ...data })
             });
-
-            masterUsers.forEach(u => {
-                const uNik = cleanString(u.nik || u.NIK);
-                if (uNik === myNik) return; // Mencegah tugaskan diri sendiri
-
-                const uDept = cleanString(u.dept || u.Departemen);
-                const uJabatan = cleanString(u.jabatan || u.Jabatan);
-                const uLevel = cleanString(u.level || u.Level);
-                const uDivisiList = (u.divisiList || [u.dept]).map(cleanString);
-
-                // ATURAN ELEVASI: DIREKTUR TIDAK BISA TUGASKAN DIREKTUR UTAMA
-                if (isDir && !isDirUtama) {
-                    if (uJabatan.includes('direktur utama') || uLevel.includes('direktur utama')) return;
-                }
-
-                // 1. Staf/Member yang berada persis di Dept Target (misal: MJA di Mikrobiologi)
-                const isExactDeptMember = (uDept === selectedDept);
-
-                // 2. Manajer yang membawahi Divisi tersebut (misal: AHW untuk Divisi Laboratorium)
-                const isDivisiManager = uDivisiList.includes(selectedDivisi) && 
-                                        (uLevel.includes('manajer') || uLevel.includes('manager') || uJabatan.includes('manajer') || uJabatan.includes('manager'));
-
-                // 3. Pengawas/Atasan yang secara Master Hirearki membawahi Dept Target (misal: DNI Pengawas Laboratorium untuk Mikrobiologi & Patologi Klinik)
-                let isSupervisorForDept = false;
-                allowedJabatansForDept.forEach(allowedJab => {
-                    if (allowedJab !== '' && (uJabatan.includes(allowedJab) || allowedJab.includes(uJabatan))) {
-                        isSupervisorForDept = true;
-                    }
-                });
-
-                if (isExactDeptMember || isDivisiManager || isSupervisorForDept) {
-                    if (!validPegawai.some(p => cleanString(p.nik) === uNik)) {
-                        validPegawai.push(u);
-                    }
-                }
-            });
-
-            if (validPegawai.length === 0) {
-                picSelect.innerHTML = `<option value="">Tidak ada penerima sah di Dept/Divisi ini</option>`;
-                return;
-            }
-
-            validPegawai.forEach(p => {
-                const nama = p.nama || p.Nama || 'Tanpa Nama';
-                const nik = p.nik || p.NIK || '-';
-                const jabatan = p.jabatan || p.Jabatan || '-';
-                picSelect.innerHTML += `<option value="${nama} - ${nik}">${nama} - ${nik} (${jabatan})</option>`;
-            });
+            res = await r.json();
+        } catch (e) {
+            throw new Error('Gagal terhubung ke server. Periksa koneksi internet lalu coba lagi.');
         }
-
-        function openChangePassModal() {
-            document.getElementById('modal-changepass').classList.remove('hidden');
-            document.getElementById('pass-new').value = '';
-            document.getElementById('pass-confirm').value = '';
-            document.getElementById('pass-error').classList.add('hidden');
+        if (!res || res.status !== 'success') {
+            const err = new Error((res && res.message) || 'Terjadi kesalahan.');
+            err.code = res && res.code;
+            if (err.code === 'AUTH' && state.token) sessionExpired(err.message);
+            throw err;
         }
+        return res;
+    }
 
-        async function handleChangePassword(e) {
-            e.preventDefault();
-            const p1 = document.getElementById('pass-new').value.trim();
-            const p2 = document.getElementById('pass-confirm').value.trim();
-            const err = document.getElementById('pass-error');
-            const btn = document.getElementById('btn-pass-submit');
+    // =========================================================
+    // TANGGAL & STATUS (satu sumber kebenaran untuk tabel, statistik, filter)
+    // =========================================================
+    function parseYmd(s) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '').trim());
+        return m ? { y: +m[1], m: +m[2], d: +m[3] } : null;
+    }
+    function ymdToUtc(s) { const p = parseYmd(s); return p ? Date.UTC(p.y, p.m - 1, p.d) : NaN; }
+    function daysBetween(a, b) { return Math.round((ymdToUtc(b) - ymdToUtc(a)) / 86400000); }
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function addDays(s, n) {
+        const d = new Date(ymdToUtc(s) + n * 86400000);
+        return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+    }
+    function localToday() {
+        const d = new Date();
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
+    function addMonthsAnchored(s, months, anchor) {
+        const p = parseYmd(s);
+        const total = p.y * 12 + (p.m - 1) + months;
+        const y = Math.floor(total / 12), m = total - y * 12;
+        const dim = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+        return `${y}-${pad2(m + 1)}-${pad2(Math.min(anchor || p.d, dim))}`;
+    }
+    function parseFreq(f) {
+        const s = lc(f); const mm = s.match(/\d+/); const n = mm ? parseInt(mm[0], 10) : 1;
+        if (s.includes('harian')) return { unit: 'day', n };
+        if (s.includes('mingguan')) return { unit: 'day', n: 7 * n };
+        if (s.includes('bulanan')) return { unit: 'month', n };
+        if (s.includes('tahunan')) return { unit: 'month', n: 12 * n };
+        return null;
+    }
+    // Sama persis dengan logika server
+    function cycleTarget(start, freq) {
+        const f = parseFreq(freq); const p = parseYmd(start);
+        if (!f || !p) return '';
+        if (f.unit === 'day' && f.n === 1) return start;
+        const next = f.unit === 'day' ? addDays(start, f.n) : addMonthsAnchored(start, f.n, p.d);
+        return addDays(next, -1);
+    }
 
-            if (p1 !== p2) {
-                err.classList.remove('hidden');
-                return;
-            }
+    const STATE_STYLE = {
+        progress: { label: 'In Progress', badge: 'bg-indigo-950/80 border-indigo-500/50 text-indigo-300', card: 'border-indigo-500/30 bg-indigo-950/10 text-indigo-400' },
+        early:    { label: 'Early Warning', badge: 'bg-amber-950/80 border-amber-500/50 text-amber-300', card: 'border-amber-500/30 bg-amber-950/10 text-amber-400' },
+        late:     { label: 'Late Warning', badge: 'bg-orange-950/80 border-orange-500/50 text-orange-300', card: 'border-orange-500/30 bg-orange-950/10 text-orange-400' },
+        verif:    { label: 'Menunggu Verifikasi', badge: 'bg-sky-950/80 border-sky-500/50 text-sky-300', card: 'border-sky-500/30 bg-sky-950/10 text-sky-400' },
+        overdue:  { label: 'Overdue', badge: 'bg-rose-950/80 border-rose-500/50 text-rose-300 animate-pulse', card: 'border-rose-500/30 bg-rose-950/10 text-rose-400' },
+        selesai:  { label: 'Selesai', badge: 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300', card: 'border-emerald-500/30 bg-emerald-950/10 text-emerald-400' }
+    };
 
-            err.classList.add('hidden');
-            btn.disabled = true;
-            btn.innerText = 'MEMPERBARUI...';
+    /**
+     * Status tampil dihitung otomatis:
+     * Selesai > Menunggu Verifikasi > Overdue > Late Warning > Early Warning > In Progress
+     */
+    function taskState(t) {
+        const today = state.today || localToday();
+        if (t.Status === STATUS.DONE) return { key: 'selesai', note: t.VerifiedAt ? `Selesai ${t.VerifiedAt.slice(0, 10)}` : '' };
+        if (t.Status === STATUS.VERIF) return { key: 'verif', note: 'Menunggu atasan' };
+        if (!parseYmd(t.TanggalTarget)) return { key: 'progress', note: '' };
+        const left = daysBetween(today, t.TanggalTarget);
+        if (left < 0) return { key: 'overdue', note: `Terlambat ${-left} hari` };
+        const late = parseInt(t.LateWarningHari, 10) || 0;
+        const early = parseInt(t.EarlyWarningHari, 10) || 0;
+        const note = left === 0 ? 'Deadline hari ini' : `H-${left}`;
+        if (late > 0 && left <= late) return { key: 'late', note };
+        if (early > 0 && left <= early) return { key: 'early', note };
+        return { key: 'progress', note };
+    }
 
-            try {
-                const response = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: 'changePassword',
-                        nik: currentUser.nik,
-                        nama: currentUser.nama,
-                        dept: currentUser.dept,
-                        newPassword: p1
-                    })
-                });
-                const res = await response.json();
-
-                if (res.status === 'success') {
-                    alert('Sandi berhasil diperbarui di Google Sheets!');
-                    document.getElementById('modal-changepass').classList.add('hidden');
-                } else {
-                    alert('Gagal mengubah sandi: ' + res.message);
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Terjadi kesalahan koneksi!');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'PERBARUI SANDI';
-            }
+    // =========================================================
+    // LOGIN, SESI, LOGOUT
+    // =========================================================
+    $('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hide('login-error');
+        const btn = $('btn-login');
+        setBusy(btn, true, 'MEMVERIFIKASI...');
+        try {
+            const res = await api('login', { nik: $('login-nik').value.trim(), password: $('login-pass').value });
+            state.token = res.token;
+            storage('set', TOKEN_KEY, res.token);
+            $('login-pass').value = '';
+            enterDashboard(res);
+        } catch (err) {
+            $('login-error-msg').textContent = err.message;
+            show('login-error');
+        } finally {
+            setBusy(btn, false);
         }
+    });
 
-        function logout() {
-            currentUser = null;
-            document.getElementById('dashboard-view').classList.add('hidden');
-            document.getElementById('login-view').classList.remove('hidden');
-            document.getElementById('login-nik').value = '';
-            document.getElementById('login-pass').value = '';
+    function showLogin(message) {
+        hide('splash-view'); hide('dashboard-view'); show('login-view');
+        ['modal-task', 'modal-detail', 'modal-pass'].forEach(hide);
+        if (message) { $('login-error-msg').textContent = message; show('login-error'); }
+        icons();
+    }
+
+    function sessionExpired(message) {
+        state.token = null;
+        storage('del', TOKEN_KEY);
+        showLogin(message || 'Sesi Anda berakhir. Silakan login kembali.');
+    }
+
+    async function logout() {
+        const t = state.token;
+        state.token = null;
+        storage('del', TOKEN_KEY);
+        if (t) {
+            fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'logout', token: t }) }).catch(() => {});
         }
+        Object.assign(state, { user: null, assignable: [], tasks: [], currentTaskId: null });
+        $('login-nik').value = '';
+        showLogin();
+    }
 
-        async function fetchDataFromGAS() {
-            try {
-                const response = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'getData' })
-                });
-                const res = await response.json();
-                if (res.status === 'success') {
-                    tasksData = res.tasks || [];
-                    renderDashboard();
-                }
-            } catch (err) {
-                console.error('Error Sync:', err);
-            }
+    function enterDashboard(res) {
+        state.user = res.user;
+        state.assignable = res.assignable || [];
+        state.divisiAll = res.divisiAll || [];
+        state.frekuensiList = res.frekuensiList || [];
+        state.today = res.today || localToday();
+
+        const u = state.user;
+        const divs = (u.divisiList || []).join(' | ') || '-';
+        $('header-user-status').textContent = u.rank <= 3
+            ? `User: ${u.nama} | NIK: ${u.nik} | Jabatan: ${u.jabatan || '-'} | Divisi: ${divs}`
+            : `User: ${u.nama} | NIK: ${u.nik} | Jabatan: ${u.jabatan || '-'} | Dept: ${u.dept || '-'} | Divisi: ${divs}`;
+
+        // Filter divisi di header
+        const sel = $('filter-divisi');
+        sel.innerHTML = '';
+        const list = u.rank <= 2 ? state.divisiAll : (u.divisiList || []);
+        sel.appendChild(new Option(u.rank <= 2 ? '🏛️ Semua Divisi' : '🏛️ Semua Wewenang Saya', 'ALL'));
+        list.forEach((d) => sel.appendChild(new Option(d, d)));
+
+        // Daftar frekuensi
+        const fs = $('task-frekuensi');
+        fs.innerHTML = '';
+        state.frekuensiList.forEach((f) => fs.appendChild(new Option(f, f)));
+
+        hide('splash-view'); hide('login-view'); show('dashboard-view');
+        icons();
+        fetchTasks();
+    }
+
+    async function fetchTasks(manual) {
+        const btn = $('btn-refresh');
+        if (manual) setBusy(btn, true, 'Memuat...');
+        try {
+            const res = await api('getData');
+            state.tasks = res.tasks || [];
+            state.today = res.today || state.today;
+            renderDashboard();
+            if (manual) toast('Data tugas diperbarui.', 'info');
+        } catch (err) {
+            if (err.code !== 'AUTH') toast(err.message, 'error');
+        } finally {
+            if (manual) setBusy(btn, false);
         }
+    }
 
-        function toggleNotifDropdown(e) {
-            e.stopPropagation();
-            const dropdown = document.getElementById('notif-dropdown');
-            dropdown.classList.toggle('hidden');
-        }
+    // =========================================================
+    // DASHBOARD
+    // =========================================================
+    ['filter-divisi', 'filter-jenis', 'filter-status'].forEach((id) => $(id).addEventListener('change', renderDashboard));
 
-        document.addEventListener('click', (e) => {
-            const dropdown = document.getElementById('notif-dropdown');
-            if (dropdown && !dropdown.contains(e.target)) {
-                dropdown.classList.add('hidden');
-            }
+    function pemberiLabel(t) {
+        return t.PemberiNama || t.PemberiNIK || '(tidak tercatat)';
+    }
+
+    function filteredTasks() {
+        const fDiv = $('filter-divisi').value;
+        const fJenis = $('filter-jenis').value;
+        const fStatus = $('filter-status').value;
+        return state.tasks.filter((t) => {
+            if (fDiv !== 'ALL' && lc(t.DivisiTarget) !== lc(fDiv)) return false;
+            if (fJenis !== 'ALL' && t.JenisTugas !== fJenis) return false;
+            if (fStatus !== 'ALL' && taskState(t).key !== fStatus) return false;
+            return true;
+        });
+    }
+
+    function renderStats() {
+        // Statistik mengikuti filter divisi & jenis, bukan filter status
+        const fDiv = $('filter-divisi').value;
+        const fJenis = $('filter-jenis').value;
+        const base = state.tasks.filter((t) =>
+            (fDiv === 'ALL' || lc(t.DivisiTarget) === lc(fDiv)) && (fJenis === 'ALL' || t.JenisTugas === fJenis));
+        const count = { progress: 0, early: 0, late: 0, verif: 0, overdue: 0, selesai: 0 };
+        base.forEach((t) => count[taskState(t).key]++);
+        const active = $('filter-status').value;
+
+        const cards = [
+            { key: 'ALL', label: 'Total Tugas', value: base.length, cls: 'border-borderDark text-white' },
+            ...['progress', 'early', 'late', 'verif', 'overdue', 'selesai'].map((k) => ({
+                key: k, label: STATE_STYLE[k].label, value: count[k], cls: STATE_STYLE[k].card
+            }))
+        ];
+        $('stats-grid').innerHTML = cards.map((c) => `
+            <button type="button" data-stat="${c.key}" class="text-left bg-panelBg border p-3.5 rounded-2xl transition hover:brightness-125 ${c.cls} ${active === c.key ? 'ring-2 ring-brandPurple' : ''}">
+                <p class="text-[10px] font-bold uppercase tracking-wider opacity-90">${esc(c.label)}</p>
+                <h3 class="text-xl font-bold mt-1">${c.value}</h3>
+            </button>`).join('');
+    }
+
+    $('stats-grid').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-stat]');
+        if (!b) return;
+        const sel = $('filter-status');
+        sel.value = (sel.value === b.dataset.stat) ? 'ALL' : b.dataset.stat;
+        renderDashboard();
+    });
+
+    function renderDashboard() {
+        renderStats();
+        renderNotifications();
+        const rows = filteredTasks().sort((a, b) => {
+            const order = { overdue: 0, late: 1, verif: 2, early: 3, progress: 4, selesai: 5 };
+            const sa = order[taskState(a).key], sb = order[taskState(b).key];
+            return sa - sb || String(a.TanggalTarget).localeCompare(String(b.TanggalTarget));
         });
 
-        function markNotifRead(taskId) {
-            if (!readNotifications.includes(taskId)) {
-                readNotifications.push(taskId);
-                localStorage.setItem('read_notifs', JSON.stringify(readNotifications));
-            }
-
-            document.getElementById('filter-divisi-header').value = 'ALL';
-            document.getElementById('filter-jenis-header').value = 'ALL';
-            document.getElementById('filter-status-header').value = 'ALL';
-
-            renderDashboard();
-
-            setTimeout(() => {
-                const row = document.getElementById('row-' + taskId);
-                if (row) {
-                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    row.classList.add('bg-indigo-900/60');
-                    setTimeout(() => row.classList.remove('bg-indigo-900/60'), 3000);
-                }
-            }, 200);
-
-            document.getElementById('notif-dropdown').classList.add('hidden');
+        const tbody = $('tasks-tbody');
+        if (rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500 font-bold">Tidak ada tugas yang sesuai filter dalam wewenang Anda.</td></tr>`;
+            return;
         }
 
-        function resolvePemberiNama(t) {
-            let pNama = getProp(t, ['PemberiNama', 'pemberiNama', 'Pemberi_Nama']);
-            let pNik = getProp(t, ['PemberiNIK', 'pemberiNik', 'Pemberi_NIK']);
-
-            if (pNama && cleanString(pNama) !== 'atasan') {
-                return pNama;
-            }
-
-            if (pNik) {
-                let foundUser = masterUsers.find(u => cleanString(u.nik) === cleanString(pNik));
-                if (foundUser) return foundUser.nama;
-            }
-
-            return 'DPS';
-        }
-
-        // PERBAIKAN MUTLAK: MATRIKS HAK AKSES HIRARKI PADA DASHBOARD TABEL
-        // PERBAIKAN MUTLAK: ISOLASI DEPARTEMEN & LEVEL TANPA CELAH
-        function renderDashboard() {
-            let viewable = tasksData;
-
-            const filterDivisi = cleanString(document.getElementById('filter-divisi-header')?.value || 'ALL');
-            const filterJenis = cleanString(document.getElementById('filter-jenis-header')?.value || 'ALL');
-            const filterStatus = cleanString(document.getElementById('filter-status-header')?.value || 'ALL');
-
-            const userNik = cleanString(currentUser.nik);
-            const userNama = cleanString(currentUser.nama);
-            const userDept = cleanString(currentUser.dept);
-            const userLevel = cleanString(currentUser.level || currentUser.jabatan);
-            const myDivs = (currentUser.divisiList || [currentUser.dept]).map(cleanString).filter(Boolean);
-
-            const isDirUtama = isDirekturUtama();
-            const isDir = isDirektur();
-
-            // KUNCI ISOLASI LINTAS DEPARTEMEN & HIERARKI LEVEL
-            if (!isDirUtama && !isDir) {
-                viewable = viewable.filter(t => {
-                    const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik']));
-                    const pmbNik = cleanString(getProp(t, ['PemberiNIK', 'pemberiNik']));
-                    const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama']));
-                    
-                    const tDiv = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']));
-                    const tDept = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
-
-                    // 1. Jika tugas ditujukan ke atau dibuat oleh User yang login sendiri -> IZINKAN
-                    if ((picNik !== '' && picNik === userNik) || (pmbNik !== '' && pmbNik === userNik) || (picNama !== '' && picNama.includes(userNama))) {
-                        return true;
-                    }
-
-                    // Cari Profil Akun PIC Penerima Tugas di MasterDatabase
-                    const picUserObj = masterUsers.find(u => {
-                        const uN = cleanString(u.nik || u.NIK);
-                        const uNm = cleanString(u.nama || u.Nama);
-                        return (picNik !== '' && uN === picNik) || (picNama !== '' && uNm.includes(picNama));
-                    });
-
-                    // Ambil Dept & Divisi Asli dari PIC Penerima
-                    const targetPicDept = picUserObj ? cleanString(picUserObj.dept || picUserObj.Departemen) : tDept;
-                    const targetPicDivs = picUserObj ? (picUserObj.divisiList || [picUserObj.dept]).map(cleanString) : [tDiv];
-
-                    // 2. CEK ISOLASI DEPARTEMEN/DIVISI KETAT:
-                    // Apakah PIC Penerima berada di Divisi/Dept yang sama dengan User Login?
-                    const isSameScope = myDivs.some(md => md !== '' && (targetPicDivs.includes(md) || targetPicDept === md || md === targetPicDept)) || (userDept !== '' && targetPicDept === userDept);
-
-                    // JIKA BEDA DEPARTEMEN & DIVISI -> BLOKIR MUTLAK 100%!
-                    if (!isSameScope) {
-                        return false;
-                    }
-
-                    // 3. ATURAN HIERARKI LEVEL (Staf, SPV, Manager) Dalam Dept/Divisi Yang Sama
-                    const picLevel = picUserObj ? cleanString(picUserObj.level || picUserObj.jabatan) : 'staf';
-
-                    if (userLevel.includes('staf')) {
-                        // Staf dilarang lihat tugas staf lain/atasan
-                        return false;
-                    } 
-                    else if (userLevel.includes('spv') || userLevel.includes('pengawas') || userLevel.includes('supervisor')) {
-                        // SPV hanya bisa lihat Staf di bawah dept-nya
-                        return picLevel.includes('staf');
-                    } 
-                    else if (userLevel.includes('manajer') || userLevel.includes('manager')) {
-                        // Manager hanya bisa lihat SPV & Staf di bawah divisinya
-                        return picLevel.includes('staf') || picLevel.includes('spv') || picLevel.includes('pengawas') || picLevel.includes('supervisor');
-                    }
-
-                    return false;
-                });
-            }
-
-            if (filterDivisi !== 'all') {
-                viewable = viewable.filter(t => {
-                    const deptTarget = cleanString(getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']));
-                    const divisiTarget = cleanString(getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']));
-                    return deptTarget.includes(filterDivisi) || divisiTarget.includes(filterDivisi) || filterDivisi.includes(deptTarget);
-                });
-            }
-
-            if (filterJenis !== 'all') {
-                viewable = viewable.filter(t => {
-                    const jenis = cleanString(getProp(t, ['JenisTugas', 'jenisTugas']));
-                    return jenis.includes(filterJenis);
-                });
-            }
-
-            if (filterStatus !== 'all') {
-                viewable = viewable.filter(t => {
-                    const st = cleanString(getProp(t, ['Status', 'status'])).toUpperCase();
-                    if (filterStatus === 'progress') return st.includes('PROGRESS') || st.includes('VERIF') || st === '';
-                    if (filterStatus === 'selesai') return st.includes('SELESAI') || st.includes('APPROVED');
-                    if (filterStatus === 'overdue') return st.includes('OVERDUE') || st.includes('TERLEWAT');
-                    return true;
-                });
-            }
-
-            const myReceivedTasks = tasksData.filter(t => {
-                const picNik = cleanString(getProp(t, ['PIC_NIK', 'picNik']));
-                const picNama = cleanString(getProp(t, ['PIC_Nama', 'picNama']));
-                return (picNik !== '' && picNik === userNik) || (picNama !== '' && picNama.includes(userNama));
-            });
-
-            const unreadTasks = myReceivedTasks.filter(t => {
-                const taskId = getProp(t, ['TaskID', 'id', 'ID']);
-                return !readNotifications.includes(taskId);
-            });
-
-            const badge = document.getElementById('notif-badge');
-            const unreadCountElem = document.getElementById('notif-unread-count');
-            const notifListElem = document.getElementById('notif-list');
-
-            if (myReceivedTasks.length > 0 && unreadTasks.length > 0) {
-                badge.innerText = unreadTasks.length;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-
-            unreadCountElem.innerText = `${unreadTasks.length} Belum Dibaca`;
-
-            if (myReceivedTasks.length === 0) {
-                notifListElem.innerHTML = `<div class="p-4 text-center text-xs text-gray-500">Tidak ada notifikasi tugas baru.</div>`;
-            } else {
-                notifListElem.innerHTML = myReceivedTasks.map(t => {
-                    const taskId = getProp(t, ['TaskID', 'id', 'ID']);
-                    const isUnread = !readNotifications.includes(taskId);
-                    const pemberi = resolvePemberiNama(t);
-                    const judul = getProp(t, ['Judul', 'judul']);
-                    const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']);
-
-                    return `
-                        <div onclick="markNotifRead('${taskId}')" class="p-3 hover:bg-cardBg/80 cursor-pointer transition ${isUnread ? 'bg-indigo-950/50 border-l-2 border-brandPurple' : 'opacity-75'}">
-                            <p class="text-xs ${isUnread ? 'font-extrabold text-white' : 'font-medium text-gray-300'}">
-                                ${isUnread ? '🔴' : '⚪'} Tugas dari <span class="text-indigo-400 font-bold">${pemberi}</span>
-                            </p>
-                            <p class="text-[11px] text-gray-200 mt-0.5 ${isUnread ? 'font-bold' : ''}">${judul}</p>
-                            <span class="text-[9px] text-gray-500 font-mono">${deadline}</span>
+        tbody.innerHTML = rows.map((t) => {
+            const st = taskState(t);
+            const sty = STATE_STYLE[st.key];
+            const prog = Math.max(0, Math.min(100, parseInt(t.Progress, 10) || 0));
+            const freq = t.JenisTugas === 'Rutin' && t.Frekuensi && t.Frekuensi !== '-' ? ` (${t.Frekuensi})` : '';
+            const siklus = t.JenisTugas === 'Rutin' && t.Siklus ? ` · Siklus ${t.Siklus}` : '';
+            const stopped = t.JenisTugas === 'Rutin' && t.IsActive === 'TIDAK' ? ' · Berhenti' : '';
+            const divDept = [t.DivisiTarget, t.DeptTarget].filter(Boolean).join(' / ') || '-';
+            const files = (t.Lampiran || []).length;
+            return `
+                <tr id="row-${esc(t.TaskID)}" class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
+                    <td class="py-3 px-4 font-mono font-bold text-white whitespace-nowrap">
+                        ${esc(t.TaskID)}<br>
+                        <span class="text-[10px] text-brandPurple font-semibold">${esc(t.JenisTugas + freq + siklus + stopped)}</span>
+                    </td>
+                    <td class="py-3 px-4 font-semibold text-white">
+                        ${esc(t.Judul)}
+                        ${files ? `<span class="text-[10px] text-brandPurple font-bold flex items-center gap-1 mt-0.5"><i data-lucide="paperclip" class="w-3 h-3"></i> ${files} Lampiran</span>` : ''}
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="text-indigo-300 font-bold">${esc(pemberiLabel(t))}</span> ➔ <span class="text-emerald-400 font-bold">${esc(t.PIC_Nama || t.PIC_NIK)}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-amber-300">${esc(divDept)}</span>
+                    </td>
+                    <td class="py-3 px-4 font-mono text-amber-400 whitespace-nowrap">${esc(t.TanggalTarget || '-')}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 border rounded-full text-[10px] font-bold whitespace-nowrap ${sty.badge}">${esc(sty.label)}</span>
+                        <div class="w-24 bg-cardBg rounded-full h-1.5 mt-1 border border-borderDark">
+                            <div class="bg-emerald-500 h-1.5 rounded-full" style="width:${prog}%"></div>
                         </div>
-                    `;
-                }).join('');
-            }
-
-            let cProgress = 0, cWarning = 0, cLate = 0, cDone = 0, cOverdue = 0;
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            viewable.forEach(t => {
-                const st = cleanString(getProp(t, ['Status', 'status'])).toUpperCase();
-                const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']);
-
-                if (st.includes('SELESAI') || st.includes('APPROVED')) cDone++;
-                else if (st.includes('OVERDUE') || (deadline && deadline < todayStr && deadline !== '-')) cOverdue++;
-                else if (st.includes('EARLY')) cWarning++;
-                else if (st.includes('LATE')) cLate++;
-                else cProgress++;
-            });
-
-            document.getElementById('stat-total').innerText = viewable.length;
-            document.getElementById('stat-progress').innerText = cProgress;
-            document.getElementById('stat-warning').innerText = cWarning;
-            document.getElementById('stat-late').innerText = cLate;
-            document.getElementById('stat-done').innerText = cDone;
-            document.getElementById('stat-overdue').innerText = cOverdue;
-
-            const tbody = document.getElementById('tasks-tbody');
-            if (viewable.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500 font-bold">Tidak ada tugas dalam wewenang hirarki Anda.</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = viewable.map(t => {
-                const id = getProp(t, ['TaskID', 'id', 'ID']);
-                const jenis = getProp(t, ['JenisTugas', 'jenisTugas']);
-                const freq = getProp(t, ['Frekuensi', 'frekuensi']);
-                const freqText = (jenis === 'Rutin' && freq && freq !== '-') ? `(${freq})` : '';
-                const judul = getProp(t, ['Judul', 'judul']);
-                
-                const pemberi = resolvePemberiNama(t);
-                const penerima = getProp(t, ['PIC_Nama', 'picNama', 'PIC_Nama', 'PIC_NIK', 'picNik']);
-                
-                // 1. Ambil data mentah dari Tugas
-let targetDiv = getProp(t, ['divisiTarget', 'DivisiTarget', 'divisi']);
-let targetDept = getProp(t, ['DeptTarget', 'deptTarget', 'Dept', 'dept']);
-
-// 2. Jika Divisi di sheet Tasks kosong atau '-', Cari otomatis dari Master Hirearki berdasarkan Dept
-if ((!targetDiv || targetDiv === '-') && targetDept && targetDept !== '-') {
-    const foundHirearki = masterHirearki.find(h => {
-        const d = String(h.Departemen || h.departemen || '').trim().toLowerCase();
-        return d === targetDept.trim().toLowerCase();
-    });
-    if (foundHirearki) {
-        targetDiv = String(foundHirearki.Divisi || foundHirearki.divisi || '').trim();
+                        <span class="text-[9px] text-emerald-400 font-bold font-mono">${prog}%</span>
+                        ${st.note ? `<span class="text-[9px] text-gray-400 font-mono ml-1">· ${esc(st.note)}</span>` : ''}
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                        <button data-detail="${esc(t.TaskID)}" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-bold transition flex items-center gap-1 ml-auto shadow whitespace-nowrap">
+                            <i data-lucide="edit-3" class="w-3 h-3"></i> ${t._perm.canUpdate || t._perm.canVerify ? 'Update' : 'Detail'}
+                        </button>
+                    </td>
+                </tr>`;
+        }).join('');
+        icons();
     }
-}
 
-// 3. Format Tampilan Kolom: "Divisi / Departemen"
-const validDiv = (targetDiv && targetDiv !== '-') ? targetDiv : '';
-const validDept = (targetDept && targetDept !== '-') ? targetDept : '';
+    $('tasks-tbody').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-detail]');
+        if (b) openDetail(b.dataset.detail);
+    });
 
-let divisiDeptFormatted = '-';
-if (validDiv && validDept) {
-    divisiDeptFormatted = `${validDiv} / ${validDept}`;
-} else if (validDiv) {
-    divisiDeptFormatted = validDiv;
-} else if (validDept) {
-    divisiDeptFormatted = validDept;
-}
+    // =========================================================
+    // NOTIFIKASI (status "dibaca" disimpan per user)
+    // =========================================================
+    function seenKey() { return 'gcs_seen_' + (state.user ? state.user.nik : ''); }
+    function getSeen() { try { return JSON.parse(storage('get', seenKey()) || '{}'); } catch (e) { return {}; } }
+    function setSeen(map) { storage('set', seenKey(), JSON.stringify(map)); }
+    function stampOf(t) { return t.UpdatedAt || t.CreatedAt || ''; }
 
-                const deadline = getProp(t, ['TanggalTarget', 'tanggalTarget']) || '-';
-                let status = getProp(t, ['Status', 'status']) || 'In Progress';
-                const progress = getProp(t, ['Progress', 'progress']) || 0;
-                const docUrlRaw = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
+    function relevantNotifs() {
+        const me = state.user.nik;
+        const seen = getSeen();
+        return state.tasks
+            .filter((t) => t._perm.isPic || t.PemberiNIK === me || t._perm.canVerify)
+            .map((t) => {
+                const unread = t.UpdatedBy !== me && stampOf(t) > (seen[t.TaskID] || '');
+                let msg;
+                if (t._perm.canVerify) msg = 'Menunggu verifikasi Anda';
+                else if (t._perm.isPic && !seen[t.TaskID] && t.PemberiNIK !== me) msg = `Tugas baru dari ${pemberiLabel(t)}`;
+                else msg = `Pembaruan · ${STATE_STYLE[taskState(t).key].label}`;
+                return { t, unread, msg };
+            })
+            .sort((a, b) => (b.unread - a.unread) || stampOf(b.t).localeCompare(stampOf(a.t)))
+            .slice(0, 40);
+    }
 
-                if (status !== 'Selesai' && deadline !== '-' && deadline < todayStr) status = 'Overdue';
+    function renderNotifications() {
+        const items = relevantNotifs();
+        const unread = items.filter((i) => i.unread).length;
+        const badge = $('notif-badge');
+        badge.textContent = unread > 99 ? '99+' : unread;
+        badge.classList.toggle('hidden', unread === 0);
+        $('notif-unread-count').textContent = `${unread} Belum Dibaca`;
+        $('notif-list').innerHTML = items.length === 0
+            ? `<div class="p-4 text-center text-xs text-gray-500">Belum ada notifikasi.</div>`
+            : items.map((i) => `
+                <div data-notif="${esc(i.t.TaskID)}" class="p-3 hover:bg-cardBg/80 cursor-pointer transition ${i.unread ? 'bg-indigo-950/50 border-l-2 border-brandPurple' : 'opacity-70'}">
+                    <p class="text-xs ${i.unread ? 'font-extrabold text-white' : 'font-medium text-gray-300'}">${i.unread ? '🔴' : '⚪'} ${esc(i.msg)}</p>
+                    <p class="text-[11px] text-gray-200 mt-0.5 ${i.unread ? 'font-bold' : ''}">${esc(i.t.Judul)}</p>
+                    <span class="text-[9px] text-gray-500 font-mono">${esc(i.t.TaskID)} · Target ${esc(i.t.TanggalTarget)}</span>
+                </div>`).join('');
+    }
 
-                let statusBadgeClass = 'bg-indigo-950/80 border-indigo-500/50 text-indigo-300';
-                if (status === 'Selesai') statusBadgeClass = 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300';
-                else if (status === 'Overdue') statusBadgeClass = 'bg-rose-950/80 border-rose-500/50 text-rose-300 animate-pulse';
+    function markSeen(taskId) {
+        const t = state.tasks.find((x) => x.TaskID === taskId);
+        if (!t) return;
+        const seen = getSeen();
+        seen[taskId] = stampOf(t) || '0';
+        setSeen(seen);
+    }
 
-                const docCount = docUrlRaw ? docUrlRaw.split(',').filter(u => u.trim().startsWith('http')).length : 0;
-                const hasFileBadge = docCount > 0 ? `<span class="text-[10px] text-brandPurple font-bold flex items-center gap-1 mt-0.5"><i data-lucide="paperclip" class="w-3 h-3"></i> ${docCount} Lampiran File</span>` : '';
+    $('btn-notif').addEventListener('click', (e) => { e.stopPropagation(); $('notif-dropdown').classList.toggle('hidden'); });
+    $('btn-notif-readall').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const seen = getSeen();
+        state.tasks.forEach((t) => { seen[t.TaskID] = stampOf(t) || '0'; });
+        setSeen(seen);
+        renderNotifications();
+    });
+    $('notif-list').addEventListener('click', (e) => {
+        const n = e.target.closest('[data-notif]');
+        if (!n) return;
+        const id = n.dataset.notif;
+        hide('notif-dropdown');
+        ['filter-divisi', 'filter-jenis', 'filter-status'].forEach((f) => $(f).value = 'ALL');
+        renderDashboard();
+        const row = $('row-' + id);
+        if (row) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.classList.add('row-flash');
+            setTimeout(() => row.classList.remove('row-flash'), 2600);
+        }
+        openDetail(id);
+    });
+    document.addEventListener('click', (e) => {
+        const d = $('notif-dropdown');
+        if (d && !d.contains(e.target)) d.classList.add('hidden');
+    });
 
-                return `
-                    <tr id="row-${id}" class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
-                        <td class="py-3 px-4 font-mono font-bold text-white">
-                            ${id}<br>
-                            <span class="text-[10px] text-brandPurple font-semibold">${jenis} ${freqText}</span>
-                        </td>
-                        <td class="py-3 px-4 font-semibold text-white">
-                            ${judul}
-                            ${hasFileBadge}
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="text-indigo-300 font-bold">${pemberi}</span> ➔ <span class="text-emerald-400 font-bold">${penerima}</span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="px-2 py-1 bg-cardBg border border-borderDark rounded text-[10px] font-bold text-amber-300">${divisiDeptFormatted}</span>
-                        </td>
-                        <td class="py-3 px-4 font-mono text-amber-400">${deadline}</td>
-                        <td class="py-3 px-4">
-                            <span class="px-2 py-0.5 border rounded-full text-[10px] font-bold ${statusBadgeClass}">${status}</span>
-                            <div class="w-24 bg-cardBg rounded-full h-1.5 mt-1 border border-borderDark">
-                                <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${progress}%"></div>
-                            </div>
-                            <span class="text-[9px] text-emerald-400 font-bold font-mono">${progress}%</span>
-                        </td>
-                        <td class="py-3 px-4 text-right">
-                            <button onclick="openUpdateTaskModal('${id}')" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-bold transition flex items-center gap-1 ml-auto shadow">
-                                <i data-lucide="edit-3" class="w-3 h-3"></i> Update / Detail
-                            </button>
-                        </td>
-                    </tr>
-                `;
+    // =========================================================
+    // FORM INPUT / UBAH TUGAS
+    // =========================================================
+    const NO_DIV = '(Tanpa Divisi)';
+    const NO_DEPT = '(Tanpa Dept)';
+
+    // Peta Divisi → Dept → daftar PIC yang boleh ditugaskan (dari server)
+    function assignMap() {
+        const map = {};
+        state.assignable.forEach((u) => {
+            const divs = (u.divisiList && u.divisiList.length) ? u.divisiList : [NO_DIV];
+            divs.forEach((d) => {
+                const dept = u.dept || NO_DEPT;
+                map[d] = map[d] || {};
+                map[d][dept] = map[d][dept] || [];
+                map[d][dept].push(u);
+            });
+        });
+        return map;
+    }
+
+    function fillSelect(sel, values, selected) {
+        sel.innerHTML = '';
+        values.forEach((v) => sel.appendChild(new Option(v.label, v.value)));
+        if (selected !== undefined && values.some((v) => v.value === selected)) sel.value = selected;
+    }
+
+    function populateDivisi(selected) {
+        const map = assignMap();
+        const divs = Object.keys(map).sort();
+        fillSelect($('task-divisi'), divs.map((d) => ({ label: d, value: d })), selected);
+        populateDept();
+    }
+
+    function populateDept(selected) {
+        const map = assignMap();
+        const div = $('task-divisi').value;
+        const depts = Object.keys(map[div] || {}).sort();
+        fillSelect($('task-dept'), depts.map((d) => ({ label: d, value: d })), selected);
+        populatePic();
+    }
+
+    function populatePic(selectedNik) {
+        const map = assignMap();
+        const users = ((map[$('task-divisi').value] || {})[$('task-dept').value] || []);
+        const me = state.user.nik;
+        fillSelect($('task-pic'), users.map((u) => ({
+            value: u.nik,
+            label: `${u.nama}${u.nik === me ? ' (Saya)' : ''} · ${u.jabatan || u.rankLabel} · NIK ${u.nik}`
+        })), selectedNik);
+        if (users.length === 0) fillSelect($('task-pic'), [{ value: '', label: 'Tidak ada penerima di departemen ini' }]);
+    }
+
+    $('task-divisi').addEventListener('change', () => populateDept());
+    $('task-dept').addEventListener('change', () => populatePic());
+    $('task-jenis').addEventListener('change', onJenisChange);
+    $('task-frekuensi').addEventListener('change', onJenisChange);
+    $('task-start').addEventListener('change', updateRutinPreview);
+
+    function onJenisChange() {
+        const rutin = $('task-jenis').value === 'Rutin';
+        $('field-frekuensi').classList.toggle('hidden', !rutin);
+        $('wrapper-task-end').classList.toggle('hidden', rutin);
+        $('wrapper-rutin-preview').classList.toggle('hidden', !rutin);
+        $('task-end').required = !rutin;
+        const harian = rutin && $('task-frekuensi').value === 'Harian';
+        ['task-early', 'task-late'].forEach((id) => {
+            const el = $(id);
+            if (harian) { el.value = 0; el.readOnly = true; } else { el.readOnly = false; }
+        });
+        updateRutinPreview();
+    }
+
+    function updateRutinPreview() {
+        const t = cycleTarget($('task-start').value, $('task-frekuensi').value);
+        $('rutin-preview').textContent = t || '-';
+    }
+
+    function openTaskModal(task) {
+        state.editingTaskId = task ? task.TaskID : null;
+        showError('task-form-error', '');
+        const isEdit = !!task;
+        $('modal-task-title').innerHTML = isEdit
+            ? `<i data-lucide="edit-3" class="w-4 h-4 text-brandPurple"></i> Ubah Detail Tugas ${esc(task.TaskID)}`
+            : `<i data-lucide="plus-circle" class="w-4 h-4 text-brandPurple"></i> Input Tugas Baru`;
+
+        // Pastikan PIC lama tetap ada di pilihan saat edit (tidak berubah diam-diam)
+        if (isEdit && !state.assignable.some((u) => u.nik === task.PIC_NIK)) {
+            state.assignable.push({ nik: task.PIC_NIK, nama: task.PIC_Nama || task.PIC_NIK, jabatan: '', dept: task.DeptTarget, divisiList: task.DivisiTarget ? [task.DivisiTarget] : [], rank: 9 });
+        }
+
+        $('task-title').value = isEdit ? task.Judul : '';
+        $('task-jenis').value = isEdit ? task.JenisTugas : 'Project';
+        $('task-jenis').disabled = isEdit;
+        if (isEdit && task.Frekuensi && task.Frekuensi !== '-') $('task-frekuensi').value = task.Frekuensi;
+        $('task-start').value = isEdit ? task.TanggalMulai : state.today;
+        $('task-end').value = isEdit ? task.TanggalTarget : '';
+        $('task-early').value = isEdit ? (task.EarlyWarningHari || 0) : 7;
+        $('task-late').value = isEdit ? (task.LateWarningHari || 0) : 3;
+        $('task-catatan').value = '';
+        $('wrapper-catatan-baru').classList.toggle('hidden', isEdit);
+
+        if (isEdit) {
+            const picUser = state.assignable.find((u) => u.nik === task.PIC_NIK);
+            const div = task.DivisiTarget && (picUser.divisiList || []).includes(task.DivisiTarget) ? task.DivisiTarget : ((picUser.divisiList || [])[0] || NO_DIV);
+            populateDivisi(div);
+            populateDept(picUser.dept || NO_DEPT);
+            populatePic(task.PIC_NIK);
+        } else {
+            populateDivisi((state.user.divisiList || [])[0]);
+            populateDept(state.user.dept || NO_DEPT);
+            populatePic(state.user.rank === 5 ? state.user.nik : undefined);
+        }
+
+        // Staf: hanya bisa membuat tugas untuk dirinya sendiri
+        const isStaf = state.user.rank === 5;
+        ['task-divisi', 'task-dept', 'task-pic'].forEach((id) => $(id).disabled = isStaf);
+        $('task-pic-hint').textContent = isStaf
+            ? 'Sebagai Staf, Anda hanya bisa membuat tugas untuk diri sendiri.'
+            : 'Hanya menampilkan karyawan yang berada dalam wewenang Anda.';
+
+        onJenisChange();
+        show('modal-task');
+        icons();
+    }
+
+    $('task-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        showError('task-form-error', '');
+        const jenis = $('task-jenis').value;
+        const early = parseInt($('task-early').value, 10);
+        const late = parseInt($('task-late').value, 10);
+        const start = $('task-start').value;
+        const end = $('task-end').value;
+
+        if (!$('task-pic').value) return showError('task-form-error', 'Pilih PIC penerima terlebih dahulu.');
+        if (isNaN(early) || isNaN(late) || early < 0 || late < 0) return showError('task-form-error', 'Early dan Late Warning harus angka 0 atau lebih.');
+        if (late > early) return showError('task-form-error', 'Late Warning tidak boleh lebih besar dari Early Warning.');
+        if (jenis === 'Project' && end < start) return showError('task-form-error', 'Tanggal target tidak boleh sebelum tanggal mulai.');
+
+        const payload = {
+            id: state.editingTaskId || '',
+            judul: $('task-title').value.trim(),
+            jenisTugas: jenis,
+            frekuensi: jenis === 'Rutin' ? $('task-frekuensi').value : '-',
+            divisiTarget: $('task-divisi').value === NO_DIV ? '' : $('task-divisi').value,
+            picNik: $('task-pic').value,
+            tanggalMulai: start,
+            tanggalTarget: jenis === 'Rutin' ? '' : end,
+            earlyWarningHari: early,
+            lateWarningHari: late,
+            catatan: $('task-catatan').value
+        };
+
+        const btn = $('btn-save-task');
+        setBusy(btn, true, 'MENYIMPAN...');
+        try {
+            const res = await api(state.editingTaskId ? 'editTask' : 'addTask', { payload });
+            toast(res.message || 'Tersimpan.');
+            hide('modal-task');
+            await fetchTasks();
+        } catch (err) {
+            showError('task-form-error', err.message);
+        } finally {
+            setBusy(btn, false);
+        }
+    });
+
+    // =========================================================
+    // DETAIL TUGAS, PROGRESS, APPROVAL
+    // =========================================================
+    function infoCell(label, value, cls = 'text-white') {
+        return `<div class="bg-cardBg/60 border border-borderDark rounded-xl p-2">
+            <p class="text-[9px] font-bold uppercase tracking-wider text-gray-500">${esc(label)}</p>
+            <p class="font-bold mt-0.5 break-words ${cls}">${esc(value || '-')}</p></div>`;
+    }
+
+    function openDetail(id) {
+        const t = state.tasks.find((x) => x.TaskID === id);
+        if (!t) return toast('Tugas tidak ditemukan. Coba refresh data.', 'error');
+        state.currentTaskId = id;
+        markSeen(id);
+        renderNotifications();
+
+        const p = t._perm;
+        const st = taskState(t);
+        const sty = STATE_STYLE[st.key];
+
+        $('detail-id').textContent = `${t.TaskID} · ${t.JenisTugas}${t.JenisTugas === 'Rutin' ? ` (${t.Frekuensi}) · Siklus ${t.Siklus || 1}` : ''}`;
+        $('detail-title').textContent = t.Judul;
+
+        $('detail-info').innerHTML =
+            infoCell('Status', `${sty.label}${st.note ? ' · ' + st.note : ''}`, sty.card.split(' ').pop()) +
+            infoCell('Progress', `${parseInt(t.Progress, 10) || 0}%`, 'text-emerald-400') +
+            infoCell('Pemberi', pemberiLabel(t), 'text-indigo-300') +
+            infoCell('PIC', `${t.PIC_Nama || ''} (${t.PIC_NIK})`, 'text-emerald-400') +
+            infoCell('Divisi / Dept', [t.DivisiTarget, t.DeptTarget].filter(Boolean).join(' / ')) +
+            infoCell('Periode', `${t.TanggalMulai} s/d ${t.TanggalTarget}`, 'text-amber-300 font-mono') +
+            infoCell('Early / Late Warning', `H-${t.EarlyWarningHari || 0} / H-${t.LateWarningHari || 0}`) +
+            (t.JenisTugas === 'Rutin' ? infoCell('Pengulangan', t.IsActive === 'TIDAK' ? 'Dihentikan' : 'Aktif', t.IsActive === 'TIDAK' ? 'text-rose-300' : 'text-emerald-300') : '') +
+            (t.VerifiedBy ? infoCell('Diverifikasi', `${t.VerifiedBy} · ${t.VerifiedAt}`, 'text-emerald-300') : '');
+
+        // Tombol ubah & pengulangan hanya untuk atasan PIC
+        const be = $('btn-edit-task');
+        be.classList.toggle('hidden', !p.canEdit); be.classList.toggle('flex', p.canEdit);
+        const br = $('btn-routine-toggle');
+        const showRt = p.canEdit && t.JenisTugas === 'Rutin';
+        br.classList.toggle('hidden', !showRt); br.classList.toggle('flex', showRt);
+        if (showRt) {
+            const stopped = t.IsActive === 'TIDAK';
+            br.innerHTML = stopped
+                ? `<i data-lucide="rotate-ccw" class="w-3 h-3"></i> Aktifkan Pengulangan`
+                : `<i data-lucide="x-circle" class="w-3 h-3"></i> Hentikan Pengulangan`;
+            br.dataset.active = stopped ? '1' : '0';
+        }
+
+        renderActionPanel(t);
+        renderFiles(t);
+        renderRoutineHistory(t);
+        $('detail-notes').textContent = t.Catatan || 'Belum ada catatan.';
+        loadLog(t.TaskID);
+
+        show('modal-detail');
+        icons();
+    }
+
+    function noteField(placeholder) {
+        return `
+            <div>
+                <label class="block font-semibold text-gray-300 mb-1">Catatan / Feedback</label>
+                <textarea id="act-note" rows="2" maxlength="2000" placeholder="${esc(placeholder)}" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 text-white focus:outline-none"></textarea>
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-300 mb-1">Lampiran Baru (maks 5 MB)</label>
+                <input type="file" id="act-file" class="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brandPurple file:text-white hover:file:bg-indigo-500 cursor-pointer">
+            </div>`;
+    }
+
+    function actionBtn(mode, label, icon, cls) {
+        return `<button type="button" data-mode="${mode}" class="px-4 py-2 rounded-xl font-bold shadow flex items-center gap-1.5 text-white disabled:opacity-60 ${cls}">
+            <i data-lucide="${icon}" class="w-4 h-4"></i> ${esc(label)}</button>`;
+    }
+
+    function renderActionPanel(t) {
+        const p = t._perm;
+        const box = $('detail-action');
+        let html = '';
+
+        if (p.canUpdate) {
+            html = `
+                <div class="bg-cardBg/80 p-3 rounded-xl border border-borderDark space-y-3">
+                    <p class="font-bold text-gray-300 uppercase text-[10px] tracking-wider">Laporan Pengerjaan (Anda PIC)</p>
+                    <div>
+                        <label class="block font-semibold text-gray-300 mb-1">Progress Kerja (%)</label>
+                        <input type="number" id="act-progress" min="0" max="99" value="${Math.min(99, parseInt(t.Progress, 10) || 0)}" class="w-full bg-cardBg border border-borderDark rounded-xl p-2.5 font-bold text-emerald-400 focus:outline-none">
+                        <p class="text-[10px] text-gray-500 mt-1">100% otomatis saat Anda menekan "${p.picHasSuperior ? 'Ajukan Selesai' : 'Tandai Selesai'}".</p>
+                    </div>
+                    ${noteField('Tuliskan perkembangan, kendala, atau hasil kerja...')}
+                    <div class="flex flex-wrap justify-end gap-2 pt-1">
+                        ${actionBtn('progress', 'Simpan Progress', 'save', 'bg-indigo-600 hover:bg-indigo-500')}
+                        ${actionBtn('submit', p.picHasSuperior ? 'Ajukan Selesai' : 'Tandai Selesai', 'send', 'bg-emerald-600 hover:bg-emerald-500')}
+                    </div>
+                </div>`;
+        } else if (p.canVerify) {
+            html = `
+                <div class="bg-sky-950/20 p-3 rounded-xl border border-sky-500/30 space-y-3">
+                    <p class="font-bold text-sky-300 uppercase text-[10px] tracking-wider flex items-center gap-1.5"><i data-lucide="user-check" class="w-3.5 h-3.5"></i> Verifikasi Atasan</p>
+                    <p class="text-[11px] text-gray-300">PIC sudah mengajukan tugas ini sebagai selesai. Periksa hasil dan lampirannya.</p>
+                    ${noteField('Wajib diisi jika dikembalikan untuk revisi...')}
+                    <div class="flex flex-wrap justify-end gap-2 pt-1">
+                        ${actionBtn('reject', 'Kembalikan untuk Revisi', 'rotate-ccw', 'bg-rose-700 hover:bg-rose-600')}
+                        ${actionBtn('approve', 'Setujui Selesai', 'check-circle', 'bg-emerald-600 hover:bg-emerald-500')}
+                    </div>
+                </div>`;
+        } else if (p.canFeedback) {
+            let info = '';
+            if (t.Status === STATUS.VERIF && p.isPic) info = '<p class="text-[11px] text-sky-300">Sudah Anda ajukan. Menunggu verifikasi atasan.</p>';
+            if (t.Status === STATUS.DONE) info = '<p class="text-[11px] text-emerald-300">Tugas ini sudah selesai.</p>';
+            html = `
+                <div class="bg-cardBg/80 p-3 rounded-xl border border-borderDark space-y-3">
+                    <p class="font-bold text-gray-300 uppercase text-[10px] tracking-wider">Tambah Feedback</p>
+                    ${info}
+                    ${noteField('Tuliskan arahan, masukan, atau informasi tambahan...')}
+                    <div class="flex justify-end pt-1">
+                        ${actionBtn('feedback', 'Kirim Feedback', 'message-square', 'bg-indigo-600 hover:bg-indigo-500')}
+                    </div>
+                </div>`;
+        } else {
+            html = `<p class="text-[11px] text-gray-500 italic">Anda hanya bisa melihat tugas ini.</p>`;
+        }
+        box.innerHTML = html;
+    }
+
+    function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = () => reject(new Error('Gagal membaca file.'));
+            r.readAsDataURL(file);
+        });
+    }
+
+    $('detail-action').addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-mode]');
+        if (!btn) return;
+        const mode = btn.dataset.mode;
+        const t = state.tasks.find((x) => x.TaskID === state.currentTaskId);
+        if (!t) return;
+
+        const note = ($('act-note')?.value || '').trim();
+        const fileInput = $('act-file');
+        const file = fileInput && fileInput.files[0];
+
+        if (mode === 'reject' && !note) return toast('Isi catatan revisi agar PIC tahu apa yang harus diperbaiki.', 'error');
+        if (mode === 'feedback' && !note && !file) return toast('Isi catatan atau pilih file terlebih dahulu.', 'error');
+        if (file && file.size > 5 * 1024 * 1024) return toast('Ukuran file maksimal 5 MB.', 'error');
+
+        const confirmMsg = {
+            submit: t._perm.picHasSuperior ? 'Ajukan tugas ini sebagai selesai ke atasan?' : 'Tandai tugas ini selesai?',
+            approve: 'Setujui tugas ini sebagai SELESAI?',
+            reject: 'Kembalikan tugas ini ke PIC untuk revisi?'
+        }[mode];
+        if (confirmMsg && !confirm(confirmMsg)) return;
+
+        const data = { taskId: t.TaskID, mode, catatan: note };
+        if (mode === 'progress') {
+            const pr = parseInt($('act-progress').value, 10);
+            if (isNaN(pr) || pr < 0 || pr > 99) return toast('Progress harus 0 sampai 99. Gunakan tombol selesai untuk 100%.', 'error');
+            data.progress = pr;
+        }
+
+        const allBtns = [...$('detail-action').querySelectorAll('[data-mode]')];
+        allBtns.forEach((b) => b.disabled = true);
+        setBusy(btn, true, 'MENYIMPAN...');
+        try {
+            if (file) data.file = { name: file.name, type: file.type, data: await readFileAsDataUrl(file) };
+            const res = await api('updateTask', data);
+            toast(res.message || 'Tersimpan.');
+            await fetchTasks();
+            openDetail(t.TaskID);
+        } catch (err) {
+            toast(err.message, 'error');
+            setBusy(btn, false);
+            allBtns.forEach((b) => b.disabled = false);
+        }
+    });
+
+    $('btn-edit-task').addEventListener('click', () => {
+        const t = state.tasks.find((x) => x.TaskID === state.currentTaskId);
+        if (!t) return;
+        hide('modal-detail');
+        openTaskModal(t);
+    });
+
+    $('btn-routine-toggle').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        const activate = btn.dataset.active === '1';
+        if (!confirm(activate ? 'Aktifkan kembali pengulangan otomatis tugas rutin ini?' : 'Hentikan pengulangan otomatis? Siklus berikutnya tidak akan dibuat lagi.')) return;
+        setBusy(btn, true, 'MEMPROSES...');
+        try {
+            const res = await api('setRoutineActive', { taskId: state.currentTaskId, active: activate });
+            toast(res.message);
+            await fetchTasks();
+            openDetail(state.currentTaskId);
+        } catch (err) {
+            toast(err.message, 'error');
+        } finally {
+            setBusy(btn, false);
+        }
+    });
+
+    function renderFiles(t) {
+        const box = $('detail-files');
+        const files = t.Lampiran || [];
+        if (files.length === 0) {
+            box.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
+            return;
+        }
+        box.innerHTML = files.map((f, i) => {
+            const meta = [f.by, f.at].filter(Boolean).join(' · ');
+            const action = f.id
+                ? `<button type="button" data-file="${esc(f.id)}" class="text-brandPurple font-bold hover:underline flex items-center gap-1 shrink-0"><i data-lucide="download" class="w-3 h-3"></i> Unduh</button>`
+                : (/^https:\/\//i.test(f.url) ? `<a href="${esc(f.url)}" target="_blank" rel="noopener noreferrer" class="text-brandPurple font-bold hover:underline flex items-center gap-1 shrink-0">Buka <i data-lucide="external-link" class="w-3 h-3"></i></a>` : '');
+            return `
+                <div class="flex items-center justify-between gap-2 text-[11px] bg-panelBg p-1.5 px-2.5 rounded-lg border border-borderDark">
+                    <span class="text-gray-300 font-medium truncate">📄 ${esc(f.name || 'Lampiran #' + (i + 1))}${meta ? ` <span class="text-gray-500">(${esc(meta)})</span>` : ''}</span>
+                    ${action}
+                </div>`;
+        }).join('');
+    }
+
+    $('detail-files').addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-file]');
+        if (!b) return;
+        setBusy(b, true, 'Mengunduh...');
+        try {
+            const res = await api('getFile', { taskId: state.currentTaskId, fileId: b.dataset.file });
+            const bin = atob(res.data);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const url = URL.createObjectURL(new Blob([bytes], { type: res.mime }));
+            const a = document.createElement('a');
+            a.href = url; a.download = res.name;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } catch (err) {
+            toast(err.message, 'error');
+        } finally {
+            setBusy(b, false);
+        }
+    });
+
+    function renderRoutineHistory(t) {
+        const wrap = $('detail-routine-wrap');
+        if (t.JenisTugas !== 'Rutin') { wrap.classList.add('hidden'); return; }
+        const series = t.SeriesID || t.TaskID;
+        const limit = addDays(state.today, -62);
+        const hist = state.tasks
+            .filter((x) => (x.SeriesID || x.TaskID) === series && x.TaskID !== t.TaskID && x.TanggalTarget >= limit)
+            .sort((a, b) => b.TanggalMulai.localeCompare(a.TanggalMulai));
+        $('detail-routine').innerHTML = hist.length === 0
+            ? `<span class="text-[10px] text-gray-500 italic">Belum ada siklus lain dalam 2 bulan terakhir.</span>`
+            : hist.map((x) => {
+                const s = STATE_STYLE[taskState(x).key];
+                return `<button type="button" data-detail-hist="${esc(x.TaskID)}" class="w-full text-[10px] bg-panelBg p-1.5 px-2.5 rounded-lg border border-borderDark flex justify-between items-center gap-2 hover:border-brandPurple transition">
+                    <span class="text-gray-300 font-bold text-left">${esc(x.TaskID)} · Siklus ${esc(x.Siklus || '-')} · ${esc(x.TanggalMulai)} s/d ${esc(x.TanggalTarget)}</span>
+                    <span class="px-2 py-0.5 border rounded-full font-bold whitespace-nowrap ${s.badge}">${esc(s.label)}</span></button>`;
             }).join('');
+        wrap.classList.remove('hidden');
+    }
 
-            lucide.createIcons();
+    $('detail-routine').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-detail-hist]');
+        if (b) openDetail(b.dataset.detailHist);
+    });
+
+    const LOG_LABEL = {
+        ADD_TASK: 'Membuat tugas', EDIT_TASK: 'Mengubah detail', UPDATE_PROGRESS: 'Update progress',
+        UPDATE_SUBMIT: 'Mengajukan selesai', UPDATE_APPROVE: 'Menyetujui', UPDATE_REJECT: 'Mengembalikan revisi',
+        UPDATE_FEEDBACK: 'Feedback', AUTO_ROUTINE: 'Siklus otomatis', ROUTINE_STOP: 'Menghentikan pengulangan',
+        ROUTINE_RESUME: 'Mengaktifkan pengulangan'
+    };
+
+    async function loadLog(id) {
+        const box = $('detail-log');
+        box.innerHTML = `<span class="text-gray-500 italic">Memuat riwayat...</span>`;
+        try {
+            const res = await api('getTaskLog', { taskId: id });
+            if (state.currentTaskId !== id) return;
+            box.innerHTML = res.logs.length === 0
+                ? `<span class="text-gray-500 italic">Belum ada riwayat aktivitas.</span>`
+                : res.logs.map((l) => `
+                    <div class="bg-panelBg border border-borderDark/60 rounded-lg p-2">
+                        <span class="font-mono text-gray-500">${esc(l.ts)}</span>
+                        <span class="text-indigo-300 font-bold"> · ${esc(l.nama)}</span>
+                        <span class="text-amber-300 font-bold"> · ${esc(LOG_LABEL[l.action] || l.action)}</span>
+                        ${l.details ? `<p class="text-gray-400 mt-0.5 break-words">${esc(l.details)}</p>` : ''}
+                    </div>`).join('');
+        } catch (err) {
+            if (state.currentTaskId === id) box.innerHTML = `<span class="text-rose-400">${esc(err.message)}</span>`;
         }
+    }
 
-        function toggleJenisTugasField() {
-            const jenis = document.getElementById('task-jenis').value;
-            const freqField = document.getElementById('field-frekuensi');
-            const endWrapper = document.getElementById('wrapper-task-end');
-            
-            if (jenis === 'Rutin') {
-                freqField.classList.remove('hidden');
-                endWrapper.classList.add('hidden');
-                document.getElementById('task-end').required = false;
-                handleFrekuensiChange();
-            } else {
-                freqField.classList.add('hidden');
-                endWrapper.classList.remove('hidden');
-                document.getElementById('task-end').required = true;
-                
-                document.getElementById('task-late').readOnly = false;
-                document.getElementById('task-early').readOnly = false;
-                document.getElementById('task-late').classList.remove('bg-gray-800', 'text-gray-500');
-            }
+    // =========================================================
+    // GANTI PASSWORD (verifikasi email)
+    // =========================================================
+    function checkNewPassword(p1, p2) {
+        if (p1 !== p2) return 'Konfirmasi password tidak cocok.';
+        if (p1 !== p1.trim()) return 'Password tidak boleh diawali atau diakhiri spasi.';
+        if (p1.length < 8) return 'Password minimal 8 karakter.';
+        if (!/[A-Za-z]/.test(p1) || !/[0-9]/.test(p1)) return 'Password harus kombinasi huruf dan angka.';
+        return '';
+    }
+
+    function openPassModal() {
+        ['pass-old', 'pass-otp', 'pass-new', 'pass-confirm'].forEach((id) => $(id).value = '');
+        state.oldPass = '';
+        showError('pass-error', '');
+        show('pass-step1'); hide('pass-step2');
+        show('modal-pass');
+        icons();
+    }
+
+    async function requestPassOtp(btn) {
+        setBusy(btn, true, 'MENGIRIM...');
+        showError('pass-error', '');
+        try {
+            const res = await api('requestPasswordOtp', { oldPassword: state.oldPass });
+            $('pass-email').textContent = res.email;
+            hide('pass-step1'); show('pass-step2');
+            toast(res.message, 'info');
+        } catch (err) {
+            showError('pass-error', err.message);
+        } finally {
+            setBusy(btn, false);
         }
+    }
 
-        function handleFrekuensiChange() {
-            const freq = document.getElementById('task-frekuensi').value;
-            const lateInput = document.getElementById('task-late');
-            const earlyInput = document.getElementById('task-early');
-            
-            if (freq === 'Harian') {
-                lateInput.value = 1;
-                lateInput.readOnly = true;
-                lateInput.classList.add('bg-gray-800', 'text-gray-500');
-                
-                earlyInput.value = 0;
-                earlyInput.readOnly = true;
-                earlyInput.classList.add('bg-gray-800', 'text-gray-500');
-            } else {
-                lateInput.readOnly = false;
-                lateInput.classList.remove('bg-gray-800', 'text-gray-500');
-                
-                earlyInput.readOnly = false;
-                earlyInput.classList.remove('bg-gray-800', 'text-gray-500');
-            }
+    $('pass-step1').addEventListener('submit', (e) => {
+        e.preventDefault();
+        state.oldPass = $('pass-old').value;
+        requestPassOtp($('btn-pass-otp'));
+    });
+    $('btn-pass-resend').addEventListener('click', (e) => requestPassOtp(e.currentTarget));
+
+    $('pass-step2').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = checkNewPassword($('pass-new').value, $('pass-confirm').value);
+        if (msg) return showError('pass-error', msg);
+        const btn = $('btn-pass-save');
+        setBusy(btn, true, 'MENYIMPAN...');
+        showError('pass-error', '');
+        try {
+            const res = await api('changePassword', { otp: $('pass-otp').value.trim(), newPassword: $('pass-new').value });
+            state.token = res.token;
+            storage('set', TOKEN_KEY, res.token);
+            state.oldPass = '';
+            hide('modal-pass');
+            toast('Password berhasil diperbarui. Sesi di perangkat lain otomatis keluar.');
+        } catch (err) {
+            showError('pass-error', err.message);
+        } finally {
+            setBusy(btn, false);
         }
+    });
 
-        function calculateAutoTargetDate(startDateStr, freq) {
-            if (!startDateStr) return '';
-            let d = new Date(startDateStr);
-            
-            const match = freq.match(/\d+/);
-            const multiplier = match ? parseInt(match[0], 10) : 1;
-            const f = freq.toLowerCase();
+    // =========================================================
+    // LUPA PASSWORD
+    // =========================================================
+    function openForgotModal() {
+        ['forgot-nik', 'forgot-otp', 'forgot-new', 'forgot-confirm'].forEach((id) => $(id).value = '');
+        $('forgot-nik').value = $('login-nik').value.trim();
+        showError('forgot-error', '');
+        show('forgot-step1'); hide('forgot-step2');
+        show('modal-forgot');
+        icons();
+    }
 
-            if (f.includes('harian')) {
-                if (f === 'harian') d.setDate(d.getDate() + 0);
-                else d.setDate(d.getDate() + multiplier);
-            } else if (f.includes('mingguan')) {
-                d.setDate(d.getDate() + (7 * multiplier));
-            } else if (f.includes('bulanan')) {
-                d.setMonth(d.getMonth() + multiplier);
-            } else if (f.includes('tahunan')) {
-                d.setFullYear(d.getFullYear() + multiplier);
-            }
-            return d.toISOString().split('T')[0];
+    async function requestForgotOtp(btn) {
+        setBusy(btn, true, 'MENGIRIM...');
+        showError('forgot-error', '');
+        try {
+            const res = await api('requestResetOtp', { nik: state.forgotNik });
+            $('forgot-email').textContent = res.email;
+            hide('forgot-step1'); show('forgot-step2');
+            toast(res.message, 'info');
+        } catch (err) {
+            showError('forgot-error', err.message);
+        } finally {
+            setBusy(btn, false);
         }
+    }
 
-        function closeTaskModal() {
-            document.getElementById('modal-task').classList.add('hidden');
+    $('forgot-step1').addEventListener('submit', (e) => {
+        e.preventDefault();
+        state.forgotNik = $('forgot-nik').value.trim();
+        requestForgotOtp($('btn-forgot-otp'));
+    });
+    $('btn-forgot-resend').addEventListener('click', (e) => requestForgotOtp(e.currentTarget));
+
+    $('forgot-step2').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = checkNewPassword($('forgot-new').value, $('forgot-confirm').value);
+        if (msg) return showError('forgot-error', msg);
+        const btn = $('btn-forgot-save');
+        setBusy(btn, true, 'MENYIMPAN...');
+        showError('forgot-error', '');
+        try {
+            const res = await api('resetPassword', { nik: state.forgotNik, otp: $('forgot-otp').value.trim(), newPassword: $('forgot-new').value });
+            hide('modal-forgot');
+            $('login-nik').value = state.forgotNik;
+            $('login-pass').value = '';
+            toast(res.message);
+        } catch (err) {
+            showError('forgot-error', err.message);
+        } finally {
+            setBusy(btn, false);
         }
+    });
 
-        function openTaskModal() {
-            document.getElementById('modal-task-title-ui').innerHTML = `<i data-lucide="plus-circle" class="w-4 h-4 text-brandPurple"></i> Form Input Tugas Baru`;
-            document.getElementById('task-id-edit').value = '';
-            document.getElementById('task-title').value = '';
-            document.getElementById('wrapper-catatan-baru').classList.remove('hidden');
-            document.getElementById('task-jenis').value = 'Project';
-            
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('task-start').value = today;
-            document.getElementById('task-end').value = today;
-            
-            setupMasterDataUI();
-            toggleJenisTugasField();
-            document.getElementById('modal-task').classList.remove('hidden');
+    // Tutup modal dengan tombol Esc
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        ['modal-task', 'modal-detail', 'modal-pass', 'modal-forgot', 'notif-dropdown'].forEach(hide);
+    });
+
+    // =========================================================
+    // START: pulihkan sesi tersimpan (refresh tidak perlu login ulang)
+    // =========================================================
+    (async function init() {
+        icons();
+        const saved = storage('get', TOKEN_KEY);
+        if (!saved) return showLogin();
+        state.token = saved;
+        try {
+            const res = await api('bootstrap');
+            enterDashboard(res);
+        } catch (err) {
+            if (err.code === 'AUTH') return; // sessionExpired sudah menampilkan login
+            state.token = saved;
+            hide('splash-view'); show('login-view');
+            $('login-error-msg').textContent = err.message;
+            show('login-error');
         }
-
-        function openEditTaskModalFromDetail() {
-            const taskId = document.getElementById('update-task-id').value;
-            const t = tasksData.find(x => getProp(x, ['TaskID', 'id']) === String(taskId));
-            if (!t) return;
-
-            document.getElementById('modal-update-task').classList.add('hidden');
-            document.getElementById('modal-task-title-ui').innerHTML = `<i data-lucide="edit-3" class="w-4 h-4 text-brandPurple"></i> Form Ubah Detail Tugas (Non-Destruktif)`;
-            
-            document.getElementById('task-id-edit').value = taskId;
-            document.getElementById('task-title').value = getProp(t, ['Judul', 'judul']);
-            document.getElementById('wrapper-catatan-baru').classList.add('hidden');
-            
-            document.getElementById('task-jenis').value = getProp(t, ['JenisTugas', 'jenisTugas']) || 'Project';
-            document.getElementById('task-frekuensi').value = getProp(t, ['Frekuensi', 'frekuensi']) || 'Harian';
-            document.getElementById('task-start').value = getProp(t, ['TanggalMulai', 'tanggalMulai']);
-            document.getElementById('task-end').value = getProp(t, ['TanggalTarget', 'tanggalTarget']);
-            document.getElementById('task-late').value = getProp(t, ['LateWarningHari', 'lateWarningHari']);
-            document.getElementById('task-early').value = getProp(t, ['EarlyWarningHari', 'earlyWarningHari']);
-
-            setupMasterDataUI();
-            
-            setTimeout(() => {
-                const dt = getProp(t, ['divisiTarget', 'DivisiTarget']);
-                if (dt) {
-                    document.getElementById('task-divisi-target').value = dt;
-                    updateDeptOptions();
-                }
-                setTimeout(() => {
-                    const dp = getProp(t, ['DeptTarget', 'deptTarget']);
-                    if (dp) {
-                        document.getElementById('task-dept-target').value = dp;
-                        updatePICOptions();
-                    }
-                    setTimeout(() => {
-                        const picNik = getProp(t, ['PIC_NIK', 'picNik']);
-                        const selPic = document.getElementById('task-pic-target');
-                        for (let opt of selPic.options) {
-                            if (opt.value.includes(picNik)) opt.selected = true;
-                        }
-                    }, 100);
-                }, 100);
-            }, 100);
-
-            toggleJenisTugasField();
-            document.getElementById('modal-task').classList.remove('hidden');
-        }
-
-        async function handleSaveOrEditTask(e) {
-            e.preventDefault();
-            const editId = document.getElementById('task-id-edit').value;
-            const btn = document.getElementById('btn-save-task');
-            btn.disabled = true;
-            btn.innerText = 'MENYIMPAN...';
-
-            const selPic = document.getElementById('task-pic-target').value;
-            const picNamaVal = selPic.split(' - ')[0] || selPic;
-            const picNikVal = selPic.split(' - ')[1] ? selPic.split(' - ')[1].split(' ')[0] : '';
-            
-            let jenis = document.getElementById('task-jenis').value;
-            let start = document.getElementById('task-start').value;
-            let freq = jenis === 'Rutin' ? document.getElementById('task-frekuensi').value : '-';
-            
-            let target = document.getElementById('task-end').value;
-            if (jenis === 'Rutin') target = calculateAutoTargetDate(start, freq);
-
-            const payload = {
-                id: editId || ('TSK-' + Date.now().toString().slice(-5)),
-                judul: document.getElementById('task-title').value,
-                jenisTugas: jenis,
-                frekuensi: freq,
-                divisiTarget: document.getElementById('task-divisi-target').value,
-                deptTarget: document.getElementById('task-dept-target').value,
-                picNik: picNikVal,
-                picNama: picNamaVal,
-                tanggalMulai: start,
-                tanggalTarget: target,
-                lateWarningHari: document.getElementById('task-late').value,
-                earlyWarningHari: document.getElementById('task-early').value
-            };
-
-            if (!editId) {
-                payload.pemberiNik = currentUser.nik;
-                payload.pemberiNama = currentUser.nama;
-                payload.catatanBebas = document.getElementById('task-catatan').value;
-                await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'addTask', payload, actorNik: currentUser.nik, actorNama: currentUser.nama, actorDept: currentUser.dept })
-                });
-                alert('Tugas Baru Berhasil Disimpan!');
-            } else {
-                await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'editTask', payload, actorNik: currentUser.nik, actorNama: currentUser.nama, actorDept: currentUser.dept })
-                });
-                alert('Detail Tugas Berhasil Diubah (History Tercatat secara Non-Destruktif)!');
-            }
-            
-            closeTaskModal();
-            fetchDataFromGAS();
-            btn.disabled = false;
-            btn.innerText = 'SIMPAN TUGAS';
-        }
-
-        function selectTaskStatus(status) {
-            document.getElementById('selected-status-btn').value = status;
-            
-            const btnProg = document.getElementById('btn-status-progress');
-            const btnDone = document.getElementById('btn-status-selesai');
-            const btnOver = document.getElementById('btn-status-overdue');
-
-            btnProg.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
-            btnDone.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
-            btnOver.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-cardBg border-borderDark text-gray-400";
-
-            if (status === 'In Progress') {
-                btnProg.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-indigo-600/30 border-indigo-500 text-indigo-300 shadow";
-            } else if (status === 'Selesai') {
-                btnDone.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-emerald-600/30 border-emerald-500 text-emerald-300 shadow";
-                document.getElementById('update-progress').value = 100;
-            } else if (status === 'Overdue') {
-                btnOver.className = "py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition bg-rose-600/30 border-rose-500 text-rose-300 shadow";
-            }
-        }
-
-        function openUpdateTaskModal(id) {
-            const t = tasksData.find(x => getProp(x, ['TaskID', 'id', 'ID']) === String(id));
-            if (!t) return;
-
-            document.getElementById('update-task-id').value = id;
-            document.getElementById('update-task-title').innerText = `${id} - ${getProp(t, ['Judul', 'judul'])}`;
-            document.getElementById('update-progress').value = getProp(t, ['Progress', 'progress']) || 0;
-            document.getElementById('update-catatan').value = '';
-            document.getElementById('update-file').value = '';
-
-            const currentStatus = getProp(t, ['Status', 'status']) || 'In Progress';
-            selectTaskStatus(currentStatus);
-
-            const existingDocRaw = getProp(t, ['DocURL', 'docUrl', 'DocUrl', 'Lampiran']);
-            const docListElem = document.getElementById('existing-doc-list');
-            docListElem.innerHTML = '';
-
-            if (existingDocRaw) {
-                const urls = existingDocRaw.split(',').filter(u => u.trim().startsWith('http'));
-                if (urls.length > 0) {
-                    urls.forEach((u, idx) => {
-                        docListElem.innerHTML += `
-                            <div class="flex items-center justify-between text-[11px] bg-panelBg p-1.5 px-2.5 rounded-lg border border-borderDark">
-                                <span class="text-gray-300 font-medium">📄 Dokumen Lampiran #${idx + 1}</span>
-                                <a href="${u.trim()}" target="_blank" class="text-brandPurple font-bold hover:underline flex items-center gap-1">
-                                    Buka File <i data-lucide="external-link" class="w-3 h-3"></i>
-                                </a>
-                            </div>
-                        `;
-                    });
-                } else {
-                    docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
-                }
-            } else {
-                docListElem.innerHTML = `<span class="text-gray-500 text-[11px] italic">Belum ada dokumen lampiran.</span>`;
-            }
-
-            const feedbackHistory = getProp(t, ['Catatan', 'catatan', 'CatatanBebas']);
-            document.getElementById('feedback-history-list').innerText = feedbackHistory || 'Belum ada catatan histori.';
-
-            const historyContainer = document.getElementById('routine-history-container');
-            const historyList = document.getElementById('routine-history-list');
-            const jenis = cleanString(getProp(t, ['JenisTugas', 'jenis']));
-            
-            if (jenis.includes('rutin')) {
-                const currentJudul = cleanString(getProp(t, ['Judul', 'judul']));
-                const currentDept = cleanString(getProp(t, ['DeptTarget', 'dept']));
-                const twoMonthsAgo = new Date();
-                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-                
-                const historyTasks = tasksData.filter(hx => {
-                    if (cleanString(getProp(hx, ['TaskID', 'id'])) === id) return false;
-                    if (cleanString(getProp(hx, ['JenisTugas', 'jenis'])).includes('rutin') && 
-                        cleanString(getProp(hx, ['Judul', 'judul'])) === currentJudul && 
-                        cleanString(getProp(hx, ['DeptTarget', 'dept'])) === currentDept &&
-                        cleanString(getProp(hx, ['Status', 'status'])).includes('selesai')) {
-                        
-                        const tglSelesai = new Date(getProp(hx, ['TanggalTarget', 'tanggalTarget']));
-                        return tglSelesai >= twoMonthsAgo;
-                    }
-                    return false;
-                });
-
-                if (historyTasks.length > 0) {
-                    historyList.innerHTML = historyTasks.map(hx => `
-                        <div class="text-[10px] bg-panelBg p-1.5 px-2.5 rounded-lg border border-borderDark flex justify-between items-center">
-                            <span class="text-gray-300 font-bold">${getProp(hx, ['TaskID'])} (PIC: ${getProp(hx, ['PIC_Nama'])})</span>
-                            <span class="text-emerald-400 font-mono font-bold">Selesai: ${getProp(hx, ['TanggalTarget'])}</span>
-                        </div>
-                    `).join('');
-                    historyContainer.classList.remove('hidden');
-                } else {
-                    historyList.innerHTML = `<span class="text-[10px] text-gray-500 italic">Belum ada riwayat pengerjaan selesai dalam 2 bulan terakhir.</span>`;
-                    historyContainer.classList.remove('hidden');
-                }
-            } else {
-                historyContainer.classList.add('hidden');
-            }
-
-            lucide.createIcons();
-            document.getElementById('modal-update-task').classList.remove('hidden');
-        }
-
-        async function handleSaveTaskUpdate(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-save-update');
-            btn.disabled = true;
-            btn.innerText = 'MENYIMPAN...';
-
-            const taskId = document.getElementById('update-task-id').value;
-            const progress = document.getElementById('update-progress').value;
-            const status = document.getElementById('selected-status-btn').value;
-            const catatan = document.getElementById('update-catatan').value;
-            const fileInput = document.getElementById('update-file');
-
-            let fileData = null, fileName = '', fileType = '';
-
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Ukuran file maksimal adalah 5MB!');
-                    btn.disabled = false;
-                    btn.innerText = 'SIMPAN PROGRESS & FEEDBACK';
-                    return;
-                }
-
-                fileName = file.name;
-                fileType = file.type;
-                fileData = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.readAsDataURL(file);
-                });
-            }
-
-            try {
-                const response = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: 'updateTask',
-                        taskId: taskId,
-                        progress: progress,
-                        status: status,
-                        catatan: catatan,
-                        fileData: fileData,
-                        fileName: fileName,
-                        fileType: fileType,
-                        actorNik: currentUser.nik,
-                        actorNama: currentUser.nama,
-                        actorDept: currentUser.dept
-                    })
-                });
-
-                const res = await response.json();
-                if (res.status === 'success') {
-                    alert('Progress, Feedback, & Dokumen berhasil disimpan!');
-                    document.getElementById('modal-update-task').classList.add('hidden');
-                    fetchDataFromGAS();
-                } else {
-                    alert('Gagal update: ' + res.message);
-                }
-            } catch (err) {
-                alert('Terjadi kesalahan koneksi!');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'SIMPAN PROGRESS & FEEDBACK';
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+    })();
     </script>
 </body>
 </html>
