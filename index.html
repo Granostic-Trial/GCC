@@ -132,7 +132,7 @@
                         <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">0</span>
                     </button>
 
-                    <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[90vw] bg-panelBg border border-borderDark rounded-2xl shadow-2xl z-50 overflow-hidden">
+                    <div id="notif-dropdown" class="hidden fixed left-3 right-3 top-52 md:absolute md:left-auto md:right-0 md:top-auto md:mt-2 md:w-80 md:max-w-[90vw] bg-panelBg border border-borderDark rounded-2xl shadow-2xl z-50 overflow-hidden">
                         <div class="p-3 border-b border-borderDark flex justify-between items-center bg-cardBg/80">
                             <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
                                 <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-400"></i> Notifikasi Tugas
@@ -212,6 +212,26 @@
                                 <option value="selesai">Selesai</option>
                                 <option value="ditolak">Ditolak</option>
                             </select>
+                        </div>
+
+                        <div class="relative">
+                            <button type="button" id="btn-layer" class="flex items-center gap-1.5 bg-cardBg border border-borderDark rounded-xl px-2.5 py-1.5 text-xs font-bold text-white hover:bg-borderDark transition">
+                                <i data-lucide="network" class="w-3.5 h-3.5 text-amber-300"></i>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase">Cakupan:</span>
+                                <span id="layer-summary">Semua</span>
+                                <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                            </button>
+                            <div id="layer-panel" class="hidden fixed left-3 right-3 top-52 md:absolute md:left-auto md:right-0 md:top-auto md:mt-2 md:w-80 bg-panelBg border border-borderDark rounded-2xl shadow-2xl z-50 overflow-hidden">
+                                <div class="p-3 border-b border-borderDark bg-cardBg/80">
+                                    <h4 class="text-xs font-bold text-white">Cakupan Tugas</h4>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">Lapis dihitung dari jenjang atasan. Pilih satu atau lebih.</p>
+                                </div>
+                                <div id="layer-options" class="p-2 space-y-1 max-h-80 overflow-y-auto"></div>
+                                <div class="p-2 border-t border-borderDark flex justify-between gap-2">
+                                    <button type="button" id="btn-layer-all" class="text-[11px] font-bold text-indigo-300 hover:text-white px-2 py-1">Pilih Semua</button>
+                                    <button type="button" id="btn-layer-none" class="text-[11px] font-bold text-gray-400 hover:text-white px-2 py-1">Kosongkan</button>
+                                </div>
+                            </div>
                         </div>
 
                         <button id="btn-refresh" onclick="fetchTasks(true)" class="text-xs bg-cardBg px-3 py-1.5 rounded-xl border border-borderDark hover:bg-borderDark text-gray-300 flex items-center gap-1.5 font-bold transition">
@@ -892,24 +912,22 @@
         return t.PemberiNama || t.PemberiNIK || '(tidak tercatat)';
     }
 
-    function filteredTasks() {
+    // Tugas dalam filter divisi & jenis (dasar untuk hitungan cakupan)
+    function baseTasks() {
         const fDiv = $('filter-divisi').value;
         const fJenis = $('filter-jenis').value;
+        return state.tasks.filter((t) =>
+            (fDiv === 'ALL' || lc(t.DivisiTarget) === lc(fDiv)) && (fJenis === 'ALL' || t.JenisTugas === fJenis));
+    }
+
+    function filteredTasks() {
         const fStatus = $('filter-status').value;
-        return state.tasks.filter((t) => {
-            if (fDiv !== 'ALL' && lc(t.DivisiTarget) !== lc(fDiv)) return false;
-            if (fJenis !== 'ALL' && t.JenisTugas !== fJenis) return false;
-            if (fStatus !== 'ALL' && taskState(t).key !== fStatus) return false;
-            return true;
-        });
+        return baseTasks().filter((t) => inLayer(t) && (fStatus === 'ALL' || taskState(t).key === fStatus));
     }
 
     function renderStats() {
-        // Statistik mengikuti filter divisi & jenis, bukan filter status
-        const fDiv = $('filter-divisi').value;
-        const fJenis = $('filter-jenis').value;
-        const base = state.tasks.filter((t) =>
-            (fDiv === 'ALL' || lc(t.DivisiTarget) === lc(fDiv)) && (fJenis === 'ALL' || t.JenisTugas === fJenis));
+        // Statistik mengikuti filter divisi, jenis, dan cakupan; bukan filter status
+        const base = baseTasks().filter(inLayer);
         const count = { progress: 0, early: 0, late: 0, konf: 0, verif: 0, overdue: 0, selesai: 0, ditolak: 0 };
         base.forEach((t) => count[taskState(t).key]++);
         const active = $('filter-status').value;
@@ -938,6 +956,7 @@
 
     function renderDashboard() {
         renderStats();
+        renderLayerOptions();
         renderNotifications();
         const rows = filteredTasks().sort((a, b) => {
             const order = { overdue: 0, late: 1, konf: 2, verif: 3, early: 4, progress: 5, selesai: 6, ditolak: 7 };
@@ -999,6 +1018,80 @@
         const b = e.target.closest('[data-detail]');
         if (b) openDetail(b.dataset.detail);
     });
+
+    // =========================================================
+    // CAKUPAN TUGAS BERJENJANG (multi-pilih, berdasarkan lapis dari atasan)
+    // =========================================================
+    const LAYER_OPTS = [
+        { key: 'self', label: 'Tugas Saya', hint: 'Tugas yang ditugaskan kepada Anda' },
+        { key: '1', label: 'Subordinat Langsung', hint: 'Lapis 1: satu jenjang di bawah Anda' },
+        { key: '2', label: 'Subordinat Lapis 2', hint: 'Lapis 2: dua jenjang di bawah Anda (tidak langsung)' },
+        { key: '3', label: 'Subordinat Lapis 3', hint: 'Lapis 3: tiga jenjang di bawah Anda (tidak langsung)' },
+        { key: '4+', label: 'Subordinat Lapis 4 ke Bawah', hint: 'Empat jenjang atau lebih di bawah Anda' },
+        { key: 'lain', label: 'Di Luar Jalur Jenjang', hint: 'Tidak berada dalam jalur atasan Anda' }
+    ];
+    const LAYER_KEY = 'gcs_layers'; // pilihan cakupan tersimpan di perangkat ini
+
+    function loadLayerSel() {
+        try {
+            const saved = JSON.parse(storage('get', LAYER_KEY) || 'null');
+            if (Array.isArray(saved)) return new Set(saved);
+        } catch (e) { /* abaikan, pakai default */ }
+        return new Set(LAYER_OPTS.map((o) => o.key));
+    }
+    state.layerSel = loadLayerSel();
+
+    function saveLayerSel() {
+        storage('set', LAYER_KEY, JSON.stringify([...state.layerSel]));
+    }
+
+    // Kunci cakupan tiap tugas. null = data server lama, tidak disaring.
+    function layerKeyOf(t) {
+        if (t.Lapis === undefined) return null;
+        if (t.Lapis === null) return 'lain';
+        if (t.Lapis === 0) return 'self';
+        return t.Lapis >= 4 ? '4+' : String(t.Lapis);
+    }
+
+    function inLayer(t) {
+        const k = layerKeyOf(t);
+        return k === null || state.layerSel.has(k);
+    }
+
+    function renderLayerOptions() {
+        const cnt = {};
+        baseTasks().forEach((t) => { const k = layerKeyOf(t); if (k) cnt[k] = (cnt[k] || 0) + 1; });
+        const shown = LAYER_OPTS.filter((o) => o.key === 'self' || cnt[o.key]);
+        $('layer-options').innerHTML = shown.map((o) => `
+            <label class="flex items-start gap-2.5 p-2 rounded-xl hover:bg-cardBg cursor-pointer">
+                <input type="checkbox" data-layer="${o.key}" ${state.layerSel.has(o.key) ? 'checked' : ''} class="mt-0.5 w-4 h-4 shrink-0 accent-indigo-500">
+                <span class="flex-1 min-w-0">
+                    <span class="block text-xs font-bold text-white">${esc(o.label)} <span class="font-mono text-gray-400">(${cnt[o.key] || 0})</span></span>
+                    <span class="block text-[10px] text-gray-400">${esc(o.hint)}</span>
+                </span>
+            </label>`).join('');
+        const allOn = LAYER_OPTS.every((o) => state.layerSel.has(o.key));
+        $('layer-summary').textContent = allOn ? 'Semua' : (state.layerSel.size === 0 ? 'Tidak ada' : `${state.layerSel.size} dipilih`);
+    }
+
+    $('layer-options').addEventListener('change', (e) => {
+        const k = e.target.dataset.layer;
+        if (!k) return;
+        if (e.target.checked) state.layerSel.add(k); else state.layerSel.delete(k);
+        saveLayerSel();
+        renderDashboard();
+    });
+    $('btn-layer-all').addEventListener('click', () => {
+        state.layerSel = new Set(LAYER_OPTS.map((o) => o.key));
+        saveLayerSel(); renderDashboard();
+    });
+    $('btn-layer-none').addEventListener('click', () => {
+        state.layerSel = new Set();
+        saveLayerSel(); renderDashboard();
+    });
+    $('btn-layer').addEventListener('click', (e) => { e.stopPropagation(); $('layer-panel').classList.toggle('hidden'); });
+    $('layer-panel').addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', () => hide('layer-panel'));
 
     // =========================================================
     // NOTIFIKASI LONCENG (dihitung server, status baca tersimpan di server per user)
