@@ -26,6 +26,14 @@
         html.light .text-gray-200,html.light .text-gray-300{color:#374151 !important}
         html.light .text-gray-400,html.light .text-gray-500{color:#6b7280 !important}
         html.light .text-indigo-200,html.light .text-indigo-300,html.light .text-indigo-400,html.light .text-brandPurple{color:#007a96 !important}
+        /* Keterbacaan tema terang: label abu-abu dibuat lebih gelap */
+        html.light .text-gray-300{color:#374151 !important}
+        html.light .bg-cardBg\/80{background-color:#f1f5f9 !important}
+        html.light .bg-cardBg\/50{background-color:#f8fafc !important}
+        html.light .text-gray-400,html.light .text-gray-500{color:#4b5563 !important}
+        /* Tabel tugas: teks berwarna dinetralkan (warna tetap ada di badge & kartu statistik) */
+        html.light #tasks-tbody [class*="text-"]:not([class*="border"]):not([class*="bg-"]):not([class*="text-white"]){color:#1f2937 !important}
+        html.light #tasks-tbody .text-sky-300,html.light #tasks-tbody .text-emerald-300{color:#0f766e !important}
         /* Panel kiri login selalu gelap, jadi tetap pakai warna terang di tema terang */
         .hero-ink{color:#fff}
         html.light .login-hero .text-gray-300,html.light .login-hero .text-gray-400,html.light .login-hero .text-gray-500{color:#cbd5e1 !important}
@@ -306,7 +314,7 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto p-4 md:p-6 max-w-7xl mx-auto w-full space-y-6">
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 w-full space-y-6">
             <!-- Kartu statistik (klik untuk filter) -->
             <div id="stats-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3"></div>
 
@@ -368,7 +376,8 @@
                                     <h4 class="text-xs font-bold text-white">Cakupan Tugas</h4>
                                     <p class="text-[10px] text-gray-400 mt-0.5">Lapis dihitung dari jenjang atasan. Pilih satu atau lebih.</p>
                                 </div>
-                                <div id="layer-options" class="p-2 space-y-1 max-h-80 overflow-y-auto"></div>
+                                <div id="layer-options" class="p-2 space-y-1 max-h-60 overflow-y-auto"></div>
+                                <div id="people-options" class="px-2 pb-2 space-y-1 max-h-60 overflow-y-auto border-t border-borderDark"></div>
                                 <div class="p-2 border-t border-borderDark flex justify-between gap-2">
                                     <button type="button" id="btn-layer-all" class="text-[11px] font-bold text-indigo-300 hover:text-white px-2 py-1">Pilih Semua</button>
                                     <button type="button" id="btn-layer-none" class="text-[11px] font-bold text-gray-400 hover:text-white px-2 py-1">Kosongkan</button>
@@ -389,7 +398,7 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-gray-300">
+                    <table class="w-full min-w-[760px] text-left text-xs text-gray-300">
                         <thead class="bg-cardBg text-gray-400 border-b border-borderDark uppercase tracking-wider text-[10px] font-bold">
                             <tr>
                                 <th class="py-3 px-4">ID & Jenis</th>
@@ -1240,6 +1249,7 @@
         const fJenis = $('filter-jenis').value;
         return state.tasks.filter((t) =>
             (fDiv === 'ALL' || lc(t.DivisiTarget) === lc(fDiv)) && (fJenis === 'ALL' || t.JenisTugas === fJenis) &&
+            !state.personOff.has(t.PIC_NIK) &&
             (!t.DeletedAt || showDeleted()));
     }
 
@@ -1288,8 +1298,11 @@
         const rows = filteredTasks().sort((a, b) => {
             const order = { overdue: 0, late: 1, konf: 2, verif: 3, early: 4, progress: 5, selesai: 6, ditolak: 7 };
             const sa = order[taskState(a).key], sb = order[taskState(b).key];
-            return sa - sb || String(a.TanggalTarget).localeCompare(String(b.TanggalTarget));
+            const ja = a.JenisTugas === 'Rutin' ? 1 : 0, jb = b.JenisTugas === 'Rutin' ? 1 : 0;
+            return ja - jb || sa - sb || String(a.TanggalTarget).localeCompare(String(b.TanggalTarget));
         });
+        const jenisCount = { Project: 0, Rutin: 0 };
+        rows.forEach((t) => { if (jenisCount[t.JenisTugas] !== undefined) jenisCount[t.JenisTugas]++; });
 
         const tbody = $('tasks-tbody');
         if (rows.length === 0) {
@@ -1297,8 +1310,11 @@
             return;
         }
 
-        tbody.innerHTML = rows.map((t) => {
+        tbody.innerHTML = rows.map((t, i) => {
             const st = taskState(t);
+            const head = (i === 0 || rows[i - 1].JenisTugas !== t.JenisTugas)
+                ? `<tr class="border-y border-borderDark/60"><td colspan="7" class="py-2 px-4"><span class="text-[11px] font-extrabold uppercase tracking-widest ${t.JenisTugas === 'Rutin' ? 'text-sky-300' : 'text-emerald-300'}">${t.JenisTugas === 'Rutin' ? 'Tugas Rutin' : 'Tugas Project'}</span><span class="ml-2 text-[10px] font-mono text-gray-400">${t.JenisTugas === 'Rutin' ? jenisCount.Rutin : jenisCount.Project} tugas</span></td></tr>`
+                : '';
             const sty = STATE_STYLE[st.key];
             const prog = Math.max(0, Math.min(100, parseInt(t.Progress, 10) || 0));
             const freq = t.JenisTugas === 'Rutin' && t.Frekuensi && t.Frekuensi !== '-' ? ` (${t.Frekuensi})` : '';
@@ -1307,7 +1323,7 @@
             const divDept = [t.DivisiTarget, t.DeptTarget].filter(Boolean).join(' / ') || '-';
             const files = (t.Lampiran || []).length;
             return `
-                <tr id="row-${esc(t.TaskID)}" class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
+                ${head}<tr id="row-${esc(t.TaskID)}" class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
                     <td class="py-3 px-4 font-mono font-bold text-white whitespace-nowrap ${t.DeletedAt ? 'opacity-60' : ''}">
                         ${esc(t.TaskID)}${t.DeletedAt ? ' <span class="ml-1 text-[9px] font-bold bg-rose-950/60 text-rose-200 border border-rose-500/40 px-1.5 py-0.5 rounded-full align-middle">DIHAPUS</span>' : ''}<br>
                         <span class="text-[10px] text-brandPurple font-semibold">${esc(t.JenisTugas + freq + siklus + stopped)}</span>
@@ -1368,6 +1384,18 @@
     }
     state.layerSel = loadLayerSel();
 
+    // Filter per orang (PIC): daftar NIK yang TIDAK ditampilkan. Kosong = semua orang tampil.
+    const PEOPLE_KEY = 'gcs_people';
+    function loadPersonOff() {
+        try {
+            const saved = JSON.parse(storage('get', PEOPLE_KEY) || 'null');
+            if (Array.isArray(saved)) return new Set(saved);
+        } catch (e) { /* abaikan */ }
+        return new Set();
+    }
+    state.personOff = loadPersonOff();
+    function savePersonOff() { storage('set', PEOPLE_KEY, JSON.stringify([...state.personOff])); }
+
     function saveLayerSel() {
         storage('set', LAYER_KEY, JSON.stringify([...state.layerSel]));
     }
@@ -1402,17 +1430,40 @@
         const cnt = {};
         baseTasks().forEach((t) => { const k = layerKeyOf(t); if (k) cnt[k] = (cnt[k] || 0) + 1; });
         const allowed = allowedLayerKeys();
-        const shown = LAYER_OPTS.filter((o) => allowed.includes(o.key) && (o.key === 'self' || cnt[o.key]));
-        $('layer-options').innerHTML = shown.map((o) => `
-            <label class="flex items-start gap-2.5 p-2 rounded-xl hover:bg-cardBg cursor-pointer">
+        // Semua lapis yang diizinkan jabatan ini selalu tampil; lapis kosong ditandai redup
+        $('layer-options').innerHTML = LAYER_OPTS.filter((o) => allowed.includes(o.key)).map((o) => `
+            <label class="flex items-start gap-2.5 p-2 rounded-xl hover:bg-cardBg cursor-pointer ${!cnt[o.key] && o.key !== 'self' ? 'opacity-60' : ''}">
                 <input type="checkbox" data-layer="${o.key}" ${state.layerSel.has(o.key) ? 'checked' : ''} class="mt-0.5 w-4 h-4 shrink-0 accent-indigo-500">
                 <span class="flex-1 min-w-0">
                     <span class="block text-xs font-bold text-white">${esc(tr(o.label))} <span class="font-mono text-gray-400">(${cnt[o.key] || 0})</span></span>
                     <span class="block text-[10px] text-gray-400">${esc(o.hint)}</span>
                 </span>
             </label>`).join('');
+
+        // Daftar orang (PIC) dari tugas yang terlihat, mengikuti filter divisi & jenis
+        const fDiv = $('filter-divisi').value, fJenis = $('filter-jenis').value;
+        const people = {};
+        state.tasks.forEach((t) => {
+            if (t.DeletedAt && !showDeleted()) return;
+            if (fDiv !== 'ALL' && lc(t.DivisiTarget) !== lc(fDiv)) return;
+            if (fJenis !== 'ALL' && t.JenisTugas !== fJenis) return;
+            if (!t.PIC_NIK) return;
+            if (!people[t.PIC_NIK]) people[t.PIC_NIK] = { nama: t.PIC_Nama || t.PIC_NIK, n: 0 };
+            people[t.PIC_NIK].n++;
+        });
+        const list = Object.keys(people).sort((a, b) => people[a].nama.localeCompare(people[b].nama));
+        $('people-options').innerHTML = list.length ? `
+            <p class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">Per Orang (PIC)</p>` +
+            list.map((nik) => `
+            <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-cardBg cursor-pointer">
+                <input type="checkbox" data-person="${esc(nik)}" ${state.personOff.has(nik) ? '' : 'checked'} class="w-4 h-4 shrink-0 accent-indigo-500">
+                <span class="flex-1 min-w-0 text-xs font-bold text-white truncate">${esc(people[nik].nama)} <span class="font-mono text-gray-400">(${people[nik].n})</span></span>
+            </label>`).join('') : '';
+
         const picked = allowed.filter((k) => state.layerSel.has(k)).length;
-        $('layer-summary').textContent = picked === allowed.length ? tr('Semua') : (picked === 0 ? tr('Tidak ada') : `${picked} ${tr('dipilih')}`);
+        const offCount = list.filter((nik) => state.personOff.has(nik)).length;
+        $('layer-summary').textContent = (picked === allowed.length && offCount === 0) ? tr('Semua')
+            : (picked === 0 ? tr('Tidak ada') : `${picked} ${tr('dipilih')}`);
         // Staf tidak punya pilihan cakupan: tombol disembunyikan
         $('btn-layer').parentElement.classList.toggle('hidden', !layerFilterActive());
     }
@@ -1424,8 +1475,16 @@
         saveLayerSel();
         renderDashboard();
     });
+    $('people-options').addEventListener('change', (e) => {
+        const nik = e.target.dataset.person;
+        if (!nik) return;
+        if (e.target.checked) state.personOff.delete(nik); else state.personOff.add(nik);
+        savePersonOff();
+        renderDashboard();
+    });
     $('btn-layer-all').addEventListener('click', () => {
         state.layerSel = new Set(allowedLayerKeys());
+        state.personOff = new Set(); savePersonOff();
         saveLayerSel(); renderDashboard();
     });
     $('btn-layer-none').addEventListener('click', () => {
