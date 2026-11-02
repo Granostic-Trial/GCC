@@ -41,6 +41,10 @@
         html.light [class*="bg-cardBg/"] label,html.light [class*="bg-cardBg/"] p,html.light [class*="bg-cardBg/"] span,html.light [class*="bg-cardBg/"] div{color:#111827}
         html.light [class*="bg-cardBg/"] .text-gray-400,html.light [class*="bg-cardBg/"] .text-gray-500{color:#111827 !important}
         html.light [class*="bg-cardBg/"] input:not([class*="bg-"]),html.light [class*="bg-cardBg/"] textarea:not([class*="bg-"]),html.light [class*="bg-cardBg/"] select:not([class*="bg-"]){background-color:#ffffff !important;color:#111827 !important;border-color:#111827 !important}
+        /* Daftar tugas: pemisah kategori & baris yang disorot kursor (abu-abu) */
+        html.light #tasks-tbody tr.grp-head > td{background-color:#d6dbe4 !important;border-top:1px solid #111827;border-bottom:1px solid #111827}
+        html.light #tasks-tbody tr.task-row:hover > td{background-color:#e5e9f0 !important}
+        html.light #tasks-tbody tr.grp-head{background-color:#d6dbe4 !important}
         /* Panel kiri login selalu gelap, jadi tetap pakai warna terang di tema terang */
         .hero-ink{color:#fff}
         html.light .login-hero .text-gray-300,html.light .login-hero .text-gray-400,html.light .login-hero .text-gray-500{color:#cbd5e1 !important}
@@ -1320,7 +1324,7 @@
         tbody.innerHTML = rows.map((t, i) => {
             const st = taskState(t);
             const head = (i === 0 || rows[i - 1].JenisTugas !== t.JenisTugas)
-                ? `<tr class="border-y border-borderDark/60"><td colspan="7" class="py-2 px-4"><span class="text-[11px] font-extrabold uppercase tracking-widest ${t.JenisTugas === 'Rutin' ? 'text-sky-300' : 'text-emerald-300'}">${t.JenisTugas === 'Rutin' ? 'Tugas Rutin' : 'Tugas Project'}</span><span class="ml-2 text-[10px] font-mono text-gray-400">${t.JenisTugas === 'Rutin' ? jenisCount.Rutin : jenisCount.Project} tugas</span></td></tr>`
+                ? `<tr class="grp-head bg-cardBg/60"><td colspan="7" class="py-2 px-4"><span class="text-[11px] font-extrabold uppercase tracking-widest ${t.JenisTugas === 'Rutin' ? 'text-sky-300' : 'text-emerald-300'}">${t.JenisTugas === 'Rutin' ? 'Tugas Rutin' : 'Tugas Project'}</span><span class="ml-2 text-[10px] font-mono text-gray-400">${t.JenisTugas === 'Rutin' ? jenisCount.Rutin : jenisCount.Project} tugas</span></td></tr>`
                 : '';
             const sty = STATE_STYLE[st.key];
             const prog = Math.max(0, Math.min(100, parseInt(t.Progress, 10) || 0));
@@ -1330,7 +1334,7 @@
             const divDept = [t.DivisiTarget, t.DeptTarget].filter(Boolean).join(' / ') || '-';
             const files = (t.Lampiran || []).length;
             return `
-                ${head}<tr id="row-${esc(t.TaskID)}" class="hover:bg-cardBg/50 transition border-b border-borderDark/40">
+                ${head}<tr id="row-${esc(t.TaskID)}" class="task-row transition border-b border-borderDark/40">
                     <td class="py-3 px-4 font-mono font-bold text-white whitespace-nowrap ${t.DeletedAt ? 'opacity-60' : ''}">
                         ${esc(t.TaskID)}${t.DeletedAt ? ' <span class="ml-1 text-[9px] font-bold bg-rose-950/60 text-rose-200 border border-rose-500/40 px-1.5 py-0.5 rounded-full align-middle">DIHAPUS</span>' : ''}<br>
                         <span class="text-[10px] text-brandPurple font-semibold">${esc(t.JenisTugas + freq + siklus + stopped)}</span>
