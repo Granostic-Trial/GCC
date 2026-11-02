@@ -385,10 +385,13 @@
                             <div id="layer-panel" class="hidden fixed left-3 right-3 top-52 md:absolute md:left-auto md:right-0 md:top-auto md:mt-2 md:w-80 bg-panelBg border border-borderDark rounded-2xl shadow-2xl z-50 overflow-hidden">
                                 <div class="p-3 border-b border-borderDark bg-cardBg/80">
                                     <h4 class="text-xs font-bold text-white">Cakupan Tugas</h4>
-                                    <p class="text-[10px] text-gray-400 mt-0.5">Lapis dihitung dari jenjang atasan. Pilih satu atau lebih.</p>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">Pilih Tugas Saya dan/atau nama subordinat. Buka ▸ untuk melihat tim.</p>
                                 </div>
-                                <div id="layer-options" class="p-2 space-y-1 max-h-60 overflow-y-auto"></div>
-                                <div id="people-options" class="px-2 pb-2 space-y-1 max-h-60 overflow-y-auto border-t border-borderDark"></div>
+                                <div id="layer-options" class="p-2 space-y-1"></div>
+                                <div class="px-2 pt-1 pb-2 border-t border-borderDark space-y-2">
+                                    <input type="search" id="tree-search" placeholder="Cari nama..." class="w-full bg-cardBg border border-borderDark rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brandPurple">
+                                    <div id="people-options" class="space-y-0.5 max-h-72 overflow-y-auto"></div>
+                                </div>
                                 <div class="p-2 border-t border-borderDark flex justify-between gap-2">
                                     <button type="button" id="btn-layer-all" class="text-[11px] font-bold text-indigo-300 hover:text-white px-2 py-1">Pilih Semua</button>
                                     <button type="button" id="btn-layer-none" class="text-[11px] font-bold text-gray-400 hover:text-white px-2 py-1">Kosongkan</button>
@@ -1433,64 +1436,171 @@
 
     function inLayer(t) {
         if (!layerFilterActive()) return true;       // tanpa filter cakupan (Staf)
-        const k = layerKeyOf(t);
-        return k === null || state.layerSel.has(k);
+        if (t.PIC_NIK === state.user.nik) return state.layerSel.has('self');
+        return !state.personOff.has(t.PIC_NIK);      // subordinat: sesuai centang di pohon
+    }
+
+    // ---------- Cakupan: "Tugas Saya" + "Tugas Subordinat" (pohon Divisi > Departemen > Nama) ----------
+    state.treeOpen = new Set();   // node yang sedang dibuka
+    let treeQuery = '';
+
+    function subTasksForTree() {
+        const fDiv = $('filter-divisi').value, fJenis = $('filter-jenis').value;
+        return state.tasks.filter((t) => t.PIC_NIK && t.PIC_NIK !== state.user.nik &&
+            (!t.DeletedAt || showDeleted()) &&
+            (fDiv === 'ALL' || lc(t.DivisiTarget) === lc(fDiv)) &&
+            (fJenis === 'ALL' || t.JenisTugas === fJenis));
+    }
+
+    function buildTree(list) {
+        const root = {};
+        list.forEach((t) => {
+            const dv = t.DivisiTarget || '-', dp = t.DeptTarget || '-';
+            if (!root[dv]) root[dv] = { label: dv, count: 0, depts: {} };
+            root[dv].count++;
+            if (!root[dv].depts[dp]) root[dv].depts[dp] = { label: dp, count: 0, people: {} };
+            const d = root[dv].depts[dp];
+            d.count++;
+            if (!d.people[t.PIC_NIK]) d.people[t.PIC_NIK] = { nama: t.PIC_Nama || t.PIC_NIK, count: 0 };
+            d.people[t.PIC_NIK].count++;
+        });
+        return root;
+    }
+
+    function leafNiks(node) {
+        const out = [];
+        if (node.depts) Object.values(node.depts).forEach((d) => out.push(...leafNiks(d)));
+        if (node.people) out.push(...Object.keys(node.people));
+        return out;
+    }
+
+    // Centang induk: semua / sebagian / tidak sama sekali, berdasarkan orang di bawahnya
+    function checkState(niks) {
+        const on = niks.filter((n) => !state.personOff.has(n)).length;
+        return { checked: on === niks.length && niks.length > 0, indeterminate: on > 0 && on < niks.length };
+    }
+
+    function nodeBox(key, niks, label, count, extra) {
+        const st = checkState(niks);
+        return `<label class="flex items-center gap-2 py-1 pr-2 rounded-lg hover:bg-cardBg cursor-pointer ${extra || ''}">
+            <input type="checkbox" data-node="${esc(key)}" data-ind="${st.indeterminate ? 1 : 0}" ${st.checked ? 'checked' : ''} class="w-4 h-4 shrink-0 accent-indigo-500">
+            <span class="flex-1 min-w-0 text-xs font-bold text-white truncate">${esc(label)}</span>
+            <span class="font-mono text-[10px] text-gray-400 shrink-0">${count}</span>
+        </label>`;
+    }
+
+    function renderTree() {
+        const root = buildTree(subTasksForTree());
+        const q = treeQuery.trim().toLowerCase();
+        const hit = (txt) => !q || String(txt).toLowerCase().includes(q);
+        const divs = Object.values(root).sort((a, b) => a.label.localeCompare(b.label));
+        let html = '';
+        divs.forEach((dv) => {
+            const depts = Object.values(dv.depts).sort((a, b) => a.label.localeCompare(b.label));
+            let inner = '';
+            depts.forEach((d) => {
+                const people = Object.entries(d.people).sort((a, b) => a[1].nama.localeCompare(b[1].nama))
+                    .filter(([nik, p]) => hit(p.nama) || hit(d.label) || hit(dv.label));
+                if (!people.length) return;
+                const dKey = dv.label + '|' + d.label;
+                const dOpen = !!q || state.treeOpen.has(dKey);
+                const dNiks = Object.keys(d.people);
+                inner += `<div class="pl-4">
+                    <div class="flex items-center gap-1">
+                        <button type="button" data-toggle="${esc(dKey)}" class="w-5 h-5 shrink-0 text-gray-400 hover:text-white text-[10px]">${dOpen ? '▾' : '▸'}</button>
+                        <div class="flex-1 min-w-0">${nodeBox('d:' + dKey, dNiks, d.label, d.count)}</div>
+                    </div>
+                    ${dOpen ? `<div class="pl-6 space-y-0.5">${people.map(([nik, p]) => `
+                        <label class="flex items-center gap-2 py-1 pr-2 rounded-lg hover:bg-cardBg cursor-pointer">
+                            <input type="checkbox" data-node="p:${esc(nik)}" ${state.personOff.has(nik) ? '' : 'checked'} class="w-4 h-4 shrink-0 accent-indigo-500">
+                            <span class="flex-1 min-w-0 text-xs text-white truncate">${esc(p.nama)}</span>
+                            <span class="font-mono text-[10px] text-gray-400 shrink-0">${p.count}</span>
+                        </label>`).join('')}</div>` : ''}
+                </div>`;
+            });
+            if (!inner) return;
+            const dvKey = dv.label;
+            const dvOpen = !!q || state.treeOpen.has(dvKey);
+            html += `<div>
+                <div class="flex items-center gap-1">
+                    <button type="button" data-toggle="${esc(dvKey)}" class="w-5 h-5 shrink-0 text-gray-400 hover:text-white text-[10px]">${dvOpen ? '▾' : '▸'}</button>
+                    <div class="flex-1 min-w-0">${nodeBox('v:' + dvKey, leafNiks(dv), dv.label, dv.count)}</div>
+                </div>
+                ${dvOpen ? inner : ''}
+            </div>`;
+        });
+        $('people-options').innerHTML = html || `<p class="text-[11px] text-gray-400 px-2 py-2">${q ? 'Nama tidak ditemukan.' : 'Belum ada tugas subordinat.'}</p>`;
+        $('people-options').querySelectorAll('[data-ind="1"]').forEach((el) => { el.indeterminate = true; });
+        return root;
     }
 
     function renderLayerOptions() {
-        const cnt = {};
-        baseTasks().forEach((t) => { const k = layerKeyOf(t); if (k) cnt[k] = (cnt[k] || 0) + 1; });
+        const mine = baseTasks().filter((t) => t.PIC_NIK === state.user.nik).length;
         const allowed = allowedLayerKeys();
-        // Semua lapis yang diizinkan jabatan ini selalu tampil; lapis kosong ditandai redup
-        $('layer-options').innerHTML = LAYER_OPTS.filter((o) => allowed.includes(o.key)).map((o) => `
-            <label class="flex items-start gap-2.5 p-2 rounded-xl hover:bg-cardBg cursor-pointer ${!cnt[o.key] && o.key !== 'self' ? 'opacity-60' : ''}">
-                <input type="checkbox" data-layer="${o.key}" ${state.layerSel.has(o.key) ? 'checked' : ''} class="mt-0.5 w-4 h-4 shrink-0 accent-indigo-500">
+        const hasSelf = allowed.includes('self');
+        $('layer-options').innerHTML = hasSelf ? `
+            <label class="flex items-start gap-2.5 p-2 rounded-xl hover:bg-cardBg cursor-pointer">
+                <input type="checkbox" data-layer="self" ${state.layerSel.has('self') ? 'checked' : ''} class="mt-0.5 w-4 h-4 shrink-0 accent-indigo-500">
                 <span class="flex-1 min-w-0">
-                    <span class="block text-xs font-bold text-white">${esc(tr(o.label))} <span class="font-mono text-gray-400">(${cnt[o.key] || 0})</span></span>
-                    <span class="block text-[10px] text-gray-400">${esc(o.hint)}</span>
+                    <span class="block text-xs font-bold text-white">${esc(tr('Tugas Saya'))} <span class="font-mono text-gray-400">(${mine})</span></span>
+                    <span class="block text-[10px] text-gray-400">${esc(tr('Tugas yang ditugaskan kepada Anda'))}</span>
                 </span>
-            </label>`).join('');
+            </label>` : '';
 
-        // Daftar orang (PIC) dari tugas yang terlihat, mengikuti filter divisi & jenis
-        const fDiv = $('filter-divisi').value, fJenis = $('filter-jenis').value;
-        const people = {};
-        state.tasks.forEach((t) => {
-            if (t.DeletedAt && !showDeleted()) return;
-            if (fDiv !== 'ALL' && lc(t.DivisiTarget) !== lc(fDiv)) return;
-            if (fJenis !== 'ALL' && t.JenisTugas !== fJenis) return;
-            if (!t.PIC_NIK) return;
-            if (!people[t.PIC_NIK]) people[t.PIC_NIK] = { nama: t.PIC_Nama || t.PIC_NIK, n: 0 };
-            people[t.PIC_NIK].n++;
-        });
-        const list = Object.keys(people).sort((a, b) => people[a].nama.localeCompare(people[b].nama));
-        $('people-options').innerHTML = list.length ? `
-            <p class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">Per Orang (PIC)</p>` +
-            list.map((nik) => `
-            <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-cardBg cursor-pointer">
-                <input type="checkbox" data-person="${esc(nik)}" ${state.personOff.has(nik) ? '' : 'checked'} class="w-4 h-4 shrink-0 accent-indigo-500">
-                <span class="flex-1 min-w-0 text-xs font-bold text-white truncate">${esc(people[nik].nama)} <span class="font-mono text-gray-400">(${people[nik].n})</span></span>
-            </label>`).join('') : '';
-
-        const picked = allowed.filter((k) => state.layerSel.has(k)).length;
-        const offCount = list.filter((nik) => state.personOff.has(nik)).length;
-        $('layer-summary').textContent = (picked === allowed.length && offCount === 0) ? tr('Semua')
-            : (picked === 0 ? tr('Tidak ada') : `${picked} ${tr('dipilih')}`);
-        // Staf tidak punya pilihan cakupan: tombol disembunyikan
+        const root = renderTree();
+        const subAll = Object.values(root).reduce((n, dv) => n + dv.count, 0);
+        const subOn = state.tasks.length ? Object.values(root).reduce((n, dv) => n + leafNiks(dv).filter((x) => !state.personOff.has(x)).length, 0) : 0;
+        const allSubNiks = leafNiks({ depts: Object.fromEntries(Object.values(root).map((dv) => [dv.label, dv])) });
+        const subSelected = allSubNiks.length - allSubNiks.filter((x) => state.personOff.has(x)).length;
+        $('tree-search').placeholder = tr('Cari nama...');
         $('btn-layer').parentElement.classList.toggle('hidden', !layerFilterActive());
+        const selfOn = state.layerSel.has('self');
+        const parts = [];
+        if (hasSelf) parts.push(selfOn ? tr('Tugas Saya') : null);
+        if (allSubNiks.length) parts.push(`${subSelected}/${allSubNiks.length} ${tr('orang')}`);
+        const filtered = parts.filter(Boolean);
+        $('layer-summary').textContent = (filtered.length === 0) ? tr('Tidak ada')
+            : (selfOn && subSelected === allSubNiks.length) ? tr('Semua') : filtered.join(' + ');
     }
+
+    // Klik centang di pohon
+    $('people-options').addEventListener('change', (e) => {
+        const key = e.target.dataset.node;
+        if (!key) return;
+        const on = e.target.checked;
+        const setNiks = (niks) => niks.forEach((n) => { if (on) state.personOff.delete(n); else state.personOff.add(n); });
+        if (key.startsWith('p:')) setNiks([key.slice(2)]);
+        else {
+            const root = buildTree(subTasksForTree());
+            const kind = key.slice(0, 2), label = key.slice(2);
+            if (kind === 'v:') setNiks(leafNiks(root[label] || { depts: {} }));
+            else {
+                const [dvLabel, dLabel] = label.split('|');
+                const d = root[dvLabel] && root[dvLabel].depts[dLabel];
+                if (d) setNiks(Object.keys(d.people));
+            }
+        }
+        savePersonOff();
+        renderDashboard();
+    });
+
+    // Buka / tutup folder
+    $('people-options').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-toggle]');
+        if (!b) return;
+        e.preventDefault();
+        const k = b.dataset.toggle;
+        if (state.treeOpen.has(k)) state.treeOpen.delete(k); else state.treeOpen.add(k);
+        renderTree();
+    });
+
+    $('tree-search').addEventListener('input', (e) => { treeQuery = e.target.value; renderTree(); });
 
     $('layer-options').addEventListener('change', (e) => {
         const k = e.target.dataset.layer;
         if (!k) return;
         if (e.target.checked) state.layerSel.add(k); else state.layerSel.delete(k);
         saveLayerSel();
-        renderDashboard();
-    });
-    $('people-options').addEventListener('change', (e) => {
-        const nik = e.target.dataset.person;
-        if (!nik) return;
-        if (e.target.checked) state.personOff.delete(nik); else state.personOff.add(nik);
-        savePersonOff();
         renderDashboard();
     });
     $('btn-layer-all').addEventListener('click', () => {
@@ -1500,6 +1610,9 @@
     });
     $('btn-layer-none').addEventListener('click', () => {
         state.layerSel = new Set();
+        const root = buildTree(subTasksForTree());
+        state.personOff = new Set(leafNiks({ depts: Object.fromEntries(Object.values(root).map((dv) => [dv.label, dv])) }));
+        savePersonOff();
         saveLayerSel(); renderDashboard();
     });
     $('btn-layer').addEventListener('click', (e) => { e.stopPropagation(); $('layer-panel').classList.toggle('hidden'); });
