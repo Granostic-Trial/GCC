@@ -34,6 +34,13 @@
         /* Tabel tugas: teks berwarna dinetralkan (warna tetap ada di badge & kartu statistik) */
         html.light #tasks-tbody [class*="text-"]:not([class*="border"]):not([class*="bg-"]):not([class*="text-white"]){color:#1f2937 !important}
         html.light #tasks-tbody .text-sky-300,html.light #tasks-tbody .text-emerald-300{color:#0f766e !important}
+        /* Boks/kartu di tema terang: putih, border hitam, teks hitam (badge & tombol berwarna tetap) */
+        html.light .bg-cardBg,html.light [class*="bg-cardBg/"]{background-color:#ffffff !important}
+        html.light [class*="bg-cardBg/"][class*="border-borderDark"],html.light .bg-cardBg.border-borderDark{border-color:#111827 !important}
+        html.light [class*="bg-cardBg/"],html.light [class*="bg-cardBg/"] [class*="text-"]:not([class*="bg-"]):not([class*="text-white"]){color:#111827 !important}
+        html.light [class*="bg-cardBg/"] label,html.light [class*="bg-cardBg/"] p,html.light [class*="bg-cardBg/"] span,html.light [class*="bg-cardBg/"] div{color:#111827}
+        html.light [class*="bg-cardBg/"] .text-gray-400,html.light [class*="bg-cardBg/"] .text-gray-500{color:#111827 !important}
+        html.light [class*="bg-cardBg/"] input:not([class*="bg-"]),html.light [class*="bg-cardBg/"] textarea:not([class*="bg-"]),html.light [class*="bg-cardBg/"] select:not([class*="bg-"]){background-color:#ffffff !important;color:#111827 !important;border-color:#111827 !important}
         /* Panel kiri login selalu gelap, jadi tetap pakai warna terang di tema terang */
         .hero-ink{color:#fff}
         html.light .login-hero .text-gray-300,html.light .login-hero .text-gray-400,html.light .login-hero .text-gray-500{color:#cbd5e1 !important}
